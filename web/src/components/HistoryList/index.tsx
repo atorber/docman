@@ -7,7 +7,7 @@ import { getDiagnoseHistory } from '../../services/api';
 interface HistoryListProps {
   documentPath: string;
   onSelectRecord: (record: DiagnoseRecord) => void;
-  selectedRecord?: DiagnoseRecord;
+  selectedRecord?: DiagnoseRecord | null;
 }
 
 const HistoryList: React.FC<HistoryListProps> = ({ documentPath, onSelectRecord, selectedRecord }) => {

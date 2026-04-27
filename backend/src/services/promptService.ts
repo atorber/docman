@@ -17,8 +17,12 @@ export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptRe
     prompt += `**目标系统URL**: ${targetUrl}\n\n`;
   }
 
-  if (focusDimensions && focusDimensions.length > 0 && focusDimensions.length < 18) {
+  // 添加诊断维度编号
+  if (focusDimensions && focusDimensions.length > 0) {
     prompt += `**需要诊断的维度编号**: ${focusDimensions.join(', ')}\n\n`;
+  } else if (!focusDimensions) {
+    // focusDimensions 为 undefined 时，默认全选所有维度（1-18）
+    prompt += `**需要诊断的维度编号**: ${Array.from({length: 18}, (_, i) => i + 1).join(', ')}\n\n`;
   }
 
   if (customCheckRequirements) {
@@ -28,9 +32,9 @@ export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptRe
   prompt += `请执行以下操作：\n`;
   prompt += `1. 读取原始文档内容\n`;
   prompt += `2. 根据选定的诊断维度进行全面检查\n`;
-  prompt += `3. 如提供目标URL，使用browser-use进行一致性验证\n`;
-  prompt += `4. 生成诊断报告，保存到：report/${documentPath.replace('.md', '')}_${timestamp}_诊断报告.md\n`;
-  prompt += `5. 生成修复后的文档，保存到：new/${documentPath.replace('.md', '')}_${timestamp}new.md\n`;
+  prompt += `3. 如提供目标URL，使用browser-use进行一致性验证，并且如果目标URL需要登录则等待用户手动登录之后确认再继续执行；如果没有提供URL，则跳过一致性验证\n`;
+  prompt += `4. 生成诊断报告，保存到：report/${documentPath.replace('.md', '')}_${timestamp}_report.md\n`;
+  prompt += `5. 生成修复后的文档，保存到：new/${documentPath.replace('.md', '')}_${timestamp}_new.md\n`;
   prompt += `6. 生成过程记录，保存到：timeline/${documentPath.replace('.md', '')}_${timestamp}_timeline.json\n\n`;
   prompt += `请开始执行诊断任务。`;
 

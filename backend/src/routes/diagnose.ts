@@ -11,7 +11,9 @@ router.get('/history', (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: '缺少文档路径参数' });
     }
 
-    const history = getDiagnoseHistory(docPath as string);
+    // 解码URL编码的路径
+    const decodedPath = decodeURIComponent(docPath as string);
+    const history = getDiagnoseHistory(decodedPath);
     res.json({ success: true, data: history });
   } catch (error) {
     console.error('Failed to get diagnose history:', error);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Tree, Empty, Spin, Input } from 'antd';
-import { FolderOutlined, FileTextOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { FolderOutlined, FileTextOutlined } from '@ant-design/icons';
 import { DocNode } from '../../types';
 import { getDocTree } from '../../services/api';
 
@@ -54,7 +54,12 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
                 {node.type === 'directory' ? (
                   <FolderOutlined style={{ color: '#1890ff', marginRight: 8 }} />
                 ) : (
-                  <FileTextOutlined style={{ color: '#8c8c8c', marginRight: 8 }} />
+                  <FileTextOutlined
+                    style={{
+                      color: node.diagnoseStatus === 'has-history' ? '#52c41a' : '#8c8c8c',
+                      marginRight: 8
+                    }}
+                  />
                 )}
                 <span
                   style={{
@@ -68,12 +73,15 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
                 >
                   {node.name}
                 </span>
-                {node.diagnoseStatus === 'has-history' && (
-                  <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 12 }} />
-                )}
               </div>
             ),
-            icon: node.type === 'directory' ? <FolderOutlined /> : <FileTextOutlined />,
+            icon: node.type === 'directory'
+              ? <FolderOutlined />
+              : <FileTextOutlined
+                  style={{
+                    color: node.diagnoseStatus === 'has-history' ? '#52c41a' : '#8c8c8c'
+                  }}
+                />,
             isLeaf: node.type === 'file',
             selectable: node.type === 'file',
             children: children,
@@ -84,19 +92,8 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
       const transformedData = transformToAntdTree(data);
       setTreeData(transformedData);
 
-      const collectDirs = (nodes: any[]): string[] => {
-        const keys: string[] = [];
-        for (const node of nodes) {
-          if (node.children && node.children.length > 0) {
-            keys.push(node.key);
-            keys.push(...collectDirs(node.children));
-          }
-        }
-        return keys;
-      };
-
-      const dirs = collectDirs(transformedData);
-      setExpandedKeys(dirs);
+      // 默认收起所有节点
+      setExpandedKeys([]);
 
       // 默认选中第一个文件
       if (defaultSelectFirst && !firstLoaded) {

@@ -96,6 +96,14 @@ export const getDiagnoseHistory = (documentRelativePath: string): DiagnoseRecord
             const content = fs.readFileSync(itemPath, 'utf-8');
             const timeline: TimelineData = JSON.parse(content);
 
+            // 将相对路径转换为绝对路径
+            const reportPath = timeline.outputs.report
+              ? path.join(BASE_DIR, timeline.outputs.report)
+              : '';
+            const fixedDocPath = timeline.outputs.fixed_doc
+              ? path.join(BASE_DIR, timeline.outputs.fixed_doc)
+              : '';
+
             records.push({
               timestamp: timeline.start_time.replace('T', ' ').split('.')[0],
               documentPath: documentRelativePath,
@@ -105,9 +113,9 @@ export const getDiagnoseHistory = (documentRelativePath: string): DiagnoseRecord
               highPriority: timeline.summary.by_severity.high,
               mediumPriority: timeline.summary.by_severity.medium,
               lowPriority: timeline.summary.by_severity.low,
-              reportPath: timeline.outputs.report,
+              reportPath,
               timelinePath: itemPath,
-              fixedDocPath: timeline.outputs.fixed_doc,
+              fixedDocPath,
               durationSeconds: timeline.duration_seconds,
             });
           } catch (e) {
@@ -145,7 +153,16 @@ export const readTimeline = (timelinePath: string): TimelineData | null => {
 // 读取报告文件
 export const readReport = (reportPath: string): string => {
   try {
-    return fs.readFileSync(reportPath, 'utf-8');
+    // 如果是相对路径（不以/开头），则转换为绝对路径
+    let fullPath = reportPath;
+    if (!reportPath.startsWith('/')) {
+      fullPath = path.join(BASE_DIR, reportPath);
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      return '报告文件不存在';
+    }
+    return fs.readFileSync(fullPath, 'utf-8');
   } catch (e) {
     return '报告文件不存在';
   }
@@ -154,7 +171,16 @@ export const readReport = (reportPath: string): string => {
 // 读取修复后的文档
 export const readFixedDoc = (fixedDocPath: string): string => {
   try {
-    return fs.readFileSync(fixedDocPath, 'utf-8');
+    // 如果是相对路径（不以/开头），则转换为绝对路径
+    let fullPath = fixedDocPath;
+    if (!fixedDocPath.startsWith('/')) {
+      fullPath = path.join(BASE_DIR, fixedDocPath);
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      return '修复后的文档不存在';
+    }
+    return fs.readFileSync(fullPath, 'utf-8');
   } catch (e) {
     return '修复后的文档不存在';
   }

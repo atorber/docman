@@ -50,6 +50,7 @@ export interface TimelineData {
   outputs: {
     report: string;
     fixed_doc: string;
+    timeline: string;
   };
   errors: TimelineError[];
 }
