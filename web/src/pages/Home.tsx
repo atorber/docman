@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Button, Space, message, Tabs, Spin, Card, Tag, Empty, Menu, Table } from 'antd';
 import { FileTextOutlined, HistoryOutlined, FileSearchOutlined, CopyOutlined, EditOutlined, FileAddOutlined, DashboardOutlined, EyeOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
@@ -13,12 +14,16 @@ import { DocNode, DiagnoseRecord, TimelineData } from '../types';
 const { Header, Sider, Content } = Layout;
 
 const Home: React.FC = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+
   const [selectedDoc, setSelectedDoc] = useState<DocNode | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<DiagnoseRecord | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
-  const [currentNav, setCurrentNav] = useState<'diagnose' | 'records'>('diagnose');
   const [docTree, setDocTree] = useState<DocNode[]>([]);
   const [loadingTree, setLoadingTree] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // 文档内容
   const [docContent, setDocContent] = useState('');
@@ -29,6 +34,77 @@ const Home: React.FC = () => {
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [fixedContent, setFixedContent] = useState('');
   const [loadingDiagnose, setLoadingDiagnose] = useState(false);
+
+  // currentNav 从URL路径派生（只读）
+  const currentNav = location.pathname === '/records' ? 'records' : 'diagnose';
+
+  // URL同步：使用react-router的searchParams
+  const docPath = searchParams.get('doc') || undefined;
+  const recordPath = searchParams.get('record') || undefined;
+
+  // 更新URL参数
+  const updateUrl = (doc?: DocNode, record?: DiagnoseRecord) => {
+    const params = new URLSearchParams();
+    if (doc) {
+      params.set('doc', doc.relativePath);
+    }
+    if (record) {
+      params.set('record', record.timelinePath);
+    }
+    navigate(`?${params.toString()}`, { replace: true });
+  };
+
+  // 初始化：从URL恢复状态
+  useEffect(() => {
+    const initFromUrl = async () => {
+      if (docPath || recordPath) {
+        const treeData = docTree.length > 0 ? docTree : await loadDocTree();
+        if (recordPath) {
+          // 查找对应的诊断记录
+          const findRecord = (nodes: DocNode[]): DiagnoseRecord | null => {
+            for (const node of nodes) {
+              if (node.history?.some(r => r.timelinePath === recordPath)) {
+                const matchedRecord = node.history.find(r => r.timelinePath === recordPath);
+                return matchedRecord ? { ...matchedRecord, doc: matchedRecord.doc || node } : null;
+              }
+              if (node.children) {
+                const found = findRecord(node.children);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+          const record = findRecord(treeData);
+          if (record) {
+            setSelectedRecord(record);
+            if (record.doc) {
+              setSelectedDoc(record.doc);
+            }
+            setActiveTab('report');
+          }
+        } else if (docPath) {
+          // 查找对应文档
+          const findDoc = (nodes: DocNode[]): DocNode | null => {
+            for (const node of nodes) {
+              if (node.relativePath === docPath) return node;
+              if (node.children) {
+                const found = findDoc(node.children);
+                if (found) return found;
+              }
+            }
+            return null;
+          };
+          const doc = findDoc(treeData);
+          if (doc) {
+            setSelectedDoc(doc);
+            setActiveTab('preview');
+          }
+        }
+      }
+      setInitialLoadDone(true);
+    };
+    initFromUrl();
+  }, [docPath, recordPath, docTree]); // 依赖URL参数变化
 
   useEffect(() => {
     if (selectedDoc) {
@@ -52,13 +128,16 @@ const Home: React.FC = () => {
     }
   }, [currentNav]);
 
-  const loadDocTree = async () => {
+  const loadDocTree = async (): Promise<DocNode[]> => {
     setLoadingTree(true);
+
     try {
       const data = await getDocTree();
       setDocTree(data);
+      return data;
     } catch (e) {
       console.error('Failed to load doc tree:', e);
+      return [];
     } finally {
       setLoadingTree(false);
     }
@@ -115,10 +194,18 @@ const Home: React.FC = () => {
     setSelectedDoc(node);
     setSelectedRecord(null);
     setActiveTab('preview');
+    // 更新URL（跳过初始化时的更新）
+    if (initialLoadDone) {
+      updateUrl(node, undefined);
+    }
   };
 
   const handleSelectRecord = (record: DiagnoseRecord) => {
     setSelectedRecord(record);
+    // 更新URL（跳过初始化时的更新）
+    if (initialLoadDone) {
+      updateUrl(record.doc, record);
+    }
   };
 
   const handleCopy = (content: string) => {
@@ -471,15 +558,55 @@ const Home: React.FC = () => {
     </Card>
   ) : null;
 
+  const getLatestRecordForDoc = (node: DocNode): DiagnoseRecord | null => {
+    if (!node.history || node.history.length === 0) {
+      return null;
+    }
+
+    return [...node.history].sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0] || null;
+  };
+
   const handleNavToDoc = (node: DocNode) => {
-    setCurrentNav('diagnose');
-    handleSelectDoc(node);
+    const latestRecord = getLatestRecordForDoc(node);
+    const params = new URLSearchParams();
+    params.set('doc', node.relativePath);
+
+    setSelectedDoc(node);
+
+    if (latestRecord) {
+      setSelectedRecord(latestRecord);
+      setActiveTab('report');
+      params.set('record', latestRecord.timelinePath);
+    } else {
+      setSelectedRecord(null);
+      setActiveTab('preview');
+    }
+
+    // 从最近记录进入详情时，直接跳转到文档诊断根路由
+    navigate(`/?${params.toString()}`, { replace: true });
   };
 
   const navItems = [
     { key: 'diagnose', label: '文档诊断' },
     { key: 'records', label: '最近记录' },
   ];
+
+  const handleNavChange = (key: 'diagnose' | 'records') => {
+    // 主TAB切换时使用独立根路由，不继承上一页的查询参数
+    if (key === 'diagnose') {
+      navigate('/', { replace: true });
+    } else {
+      navigate('/records', { replace: true });
+    }
+  };
+
+  const handleTabChange = (key: string) => {
+    setActiveTab(key);
+    // Tab切换时更新URL
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', key);
+    navigate(`?${params.toString()}`, { replace: true });
+  };
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -488,7 +615,7 @@ const Home: React.FC = () => {
         <Menu
           mode="horizontal"
           selectedKeys={[currentNav]}
-          onClick={(e) => setCurrentNav(e.key as 'diagnose' | 'records')}
+          onClick={(e) => handleNavChange(e.key as 'diagnose' | 'records')}
           items={navItems}
           style={{ flex: 1, borderBottom: 'none' }}
         />
@@ -509,7 +636,7 @@ const Home: React.FC = () => {
               {docInfoCard}
               <Tabs
                 activeKey={activeTab}
-                onChange={setActiveTab}
+                onChange={handleTabChange}
                 items={tabItems}
                 style={{ flex: 1 }}
               />

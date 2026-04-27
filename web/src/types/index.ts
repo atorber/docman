@@ -7,6 +7,7 @@ export interface DocNode {
   children?: DocNode[];
   diagnoseStatus?: 'none' | 'has-history';
   lastDiagnoseTime?: string;
+  history?: DiagnoseRecord[];
 }
 
 // 诊断历史记录
@@ -23,6 +24,8 @@ export interface DiagnoseRecord {
   timelinePath: string;
   fixedDocPath: string;
   durationSeconds?: number;
+  // 关联的文档节点（用于URL跳转）
+  doc?: DocNode;
 }
 
 // Timeline JSON 结构
