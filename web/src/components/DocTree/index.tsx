@@ -22,6 +22,22 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
     loadTree();
   }, []);
 
+  // 外部传入 selectedDocPath 时，自动选中并展开父节点
+  useEffect(() => {
+    if (selectedDocPath) {
+      setSelectedKeys([selectedDocPath]);
+      // 展开所有父目录
+      const parts = selectedDocPath.split('/');
+      const parentKeys: string[] = [];
+      let current = '';
+      for (let i = 0; i < parts.length - 1; i++) {
+        current = current ? `${current}/${parts[i]}` : parts[i];
+        parentKeys.push(current);
+      }
+      setExpandedKeys((prev) => Array.from(new Set([...prev, ...parentKeys])));
+    }
+  }, [selectedDocPath]);
+
   const loadTree = async () => {
     try {
       setLoading(true);
@@ -92,11 +108,27 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
       const transformedData = transformToAntdTree(data);
       setTreeData(transformedData);
 
-      // 默认收起所有节点
-      setExpandedKeys([]);
-
-      // 默认选中第一个文件
-      if (defaultSelectFirst && !firstLoaded) {
+      if (selectedDocPath) {
+        // 有外部指定文档，展开其父目录并选中，同时通知父组件加载内容
+        const parts = selectedDocPath.split('/');
+        const parentKeys: string[] = [];
+        let current = '';
+        for (let i = 0; i < parts.length - 1; i++) {
+          current = current ? `${current}/${parts[i]}` : parts[i];
+          parentKeys.push(current);
+        }
+        setExpandedKeys(parentKeys);
+        setSelectedKeys([selectedDocPath]);
+        onSelectDoc({
+          name: parts[parts.length - 1],
+          path: selectedDocPath,
+          relativePath: selectedDocPath,
+          type: 'file',
+        });
+      } else if (defaultSelectFirst && !firstLoaded) {
+        // 默认收起所有节点
+        setExpandedKeys([]);
+        // 默认选中第一个文件
         const findFirstFile = (nodes: any[]): any => {
           for (const node of nodes) {
             if (node.isLeaf) return node;

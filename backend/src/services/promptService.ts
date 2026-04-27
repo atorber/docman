@@ -5,7 +5,8 @@ export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptRe
   const { documentPath, targetUrl, customCheckRequirements, focusDimensions, useLoggedInBrowser, showBrowserUI } = request;
 
   const docName = documentPath.split('/').pop() || documentPath;
-  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').split('.')[0];
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
   // 构建调用skill的指令（精简版，只包含动态参数）
   let prompt = `请使用「doc-consistency-verifier」skill执行以下文档诊断任务。\n\n`;
@@ -57,7 +58,7 @@ export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptRe
 
 // 获取所有诊断维度列表
 export const getDimensions = () => [
-  { id: 1, name: '文档与系统一致性', description: '左侧菜单结构、导航路径、入口位置、操作步骤、页面布局、按钮文案等' },
+  { id: 1, name: '文档与系统一致性', description: '双向一致性检查：文档描述在系统中是否存在、系统存在的是否在文档中有描述、文案严格比对（逐字核对）、操作选项完整性、状态与反馈一致性' },
   { id: 2, name: '语法错误', description: '句子结构、标点符号、语法规范' },
   { id: 3, name: '错别字', description: '错别字、同音字错误、形近字错误' },
   { id: 4, name: '与常识违背', description: '技术参数合理性、客观事实符合性' },
