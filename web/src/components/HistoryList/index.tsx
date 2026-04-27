@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { List, Card, Tag, Empty, Spin, Button, Space, Tooltip } from 'antd';
 import { ClockCircleOutlined, FileTextOutlined, DashboardOutlined, FileDoneOutlined, SyncOutlined } from '@ant-design/icons';
-import { DiagnoseRecord } from '../types';
+import { DiagnoseRecord } from '../../types';
 import { getDiagnoseHistory } from '../../services/api';
 
 interface HistoryListProps {

@@ -1,8 +1,49 @@
 import { GeneratePromptRequest, GeneratePromptResponse } from '../types';
-import { readDocument } from './fileService';
 
-// 诊断维度定义（与skill保持一致）
-const DIMENSIONS = [
+// 生成调用skill的诊断指令
+export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptResponse => {
+  const { documentPath, targetUrl, customCheckRequirements, focusDimensions } = request;
+
+  const docName = documentPath.split('/').pop() || documentPath;
+  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').split('.')[0];
+
+  // 构建调用skill的指令
+  let prompt = `# 文档诊断任务\n\n`;
+  prompt += `请使用「doc-consistency-verifier」skill对以下文档进行诊断。\n\n`;
+  prompt += `**原始文档路径**: raw/${documentPath}\n`;
+  prompt += `**文档名称**: ${docName}\n\n`;
+
+  if (targetUrl) {
+    prompt += `**目标系统URL**: ${targetUrl}\n\n`;
+  }
+
+  if (focusDimensions && focusDimensions.length > 0 && focusDimensions.length < 18) {
+    prompt += `**需要诊断的维度编号**: ${focusDimensions.join(', ')}\n\n`;
+  }
+
+  if (customCheckRequirements) {
+    prompt += `**自定义检查要求**: ${customCheckRequirements}\n\n`;
+  }
+
+  prompt += `请执行以下操作：\n`;
+  prompt += `1. 读取原始文档内容\n`;
+  prompt += `2. 根据选定的诊断维度进行全面检查\n`;
+  prompt += `3. 如提供目标URL，使用browser-use进行一致性验证\n`;
+  prompt += `4. 生成诊断报告，保存到：report/${documentPath.replace('.md', '')}_${timestamp}_诊断报告.md\n`;
+  prompt += `5. 生成修复后的文档，保存到：new/${documentPath.replace('.md', '')}_${timestamp}new.md\n`;
+  prompt += `6. 生成过程记录，保存到：timeline/${documentPath.replace('.md', '')}_${timestamp}_timeline.json\n\n`;
+  prompt += `请开始执行诊断任务。`;
+
+  return {
+    prompt,
+    documentPath,
+    documentName: docName,
+    timestamp,
+  };
+};
+
+// 获取所有诊断维度列表
+export const getDimensions = () => [
   { id: 1, name: '文档与系统一致性', description: '左侧菜单结构、导航路径、入口位置、操作步骤、页面布局、按钮文案等' },
   { id: 2, name: '语法错误', description: '句子结构、标点符号、语法规范' },
   { id: 3, name: '错别字', description: '错别字、同音字错误、形近字错误' },
@@ -22,56 +63,3 @@ const DIMENSIONS = [
   { id: 17, name: '命名不规范', description: '文件名规范、标题命名一致' },
   { id: 18, name: '文档完整性', description: '必要章节、目录结构' },
 ];
-
-// 生成诊断prompt
-export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptResponse => {
-  const { documentPath, documentContent, targetUrl, customCheckRequirements, focusDimensions } = request;
-
-  const docName = documentPath.split('/').pop() || documentPath;
-  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').split('.')[0];
-
-  // 获取要诊断的维度
-  const dimensionsToCheck = focusDimensions
-    ? DIMENSIONS.filter(d => focusDimensions.includes(d.id))
-    : DIMENSIONS;
-
-  const dimensionsList = dimensionsToCheck.map(d => `${d.id}. ${d.name}: ${d.description}`).join('\n');
-
-  // 构建prompt
-  let prompt = `请诊断以下文档的质量问题：\n\n`;
-  prompt += `**文档路径**: ${documentPath}\n`;
-  prompt += `**文档名称**: ${docName}\n\n`;
-
-  if (targetUrl) {
-    prompt += `**目标系统URL**: ${targetUrl}\n\n`;
-  }
-
-  prompt += `## 诊断标准（共${dimensionsToCheck.length}个维度）\n\n`;
-  prompt += dimensionsList + '\n\n';
-
-  if (customCheckRequirements) {
-    prompt += `## 自定义检查要求\n\n`;
-    prompt += `${customCheckRequirements}\n\n`;
-  }
-
-  prompt += `## 诊断要求\n\n`;
-  prompt += `1. 基础诊断：针对上述${dimensionsToCheck.length}个维度进行全面检查\n`;
-  prompt += `2. 一致性检查（可选）：如果提供了目标URL，请使用browser-use打开页面进行实际验证\n`;
-  prompt += `3. 输出要求：\n`;
-  prompt += `   - 诊断报告：保存到 report/ 目录，格式为 [文档名]_[时间戳]_诊断报告.md\n`;
-  prompt += `   - 修复后的文档：保存到 new/ 目录，格式为 [文档名]_[时间戳]new.md\n`;
-  prompt += `   - 过程记录：保存到 timeline/ 目录，格式为 [文档名]_[时间戳]_timeline.json\n`;
-  prompt += `4. 目录结构：保持与 raw/ 相同的子目录结构\n\n`;
-
-  prompt += `请开始诊断并生成报告。`;
-
-  return {
-    prompt,
-    documentPath,
-    documentName: docName,
-    timestamp,
-  };
-};
-
-// 获取所有诊断维度列表
-export const getDimensions = () => DIMENSIONS;

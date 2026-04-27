@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Tabs, Card, Spin, Empty, Button, Space, message, Tag } from 'antd';
 import { FileTextOutlined, DashboardOutlined, CodeOutlined } from '@ant-design/icons';
-import { DiagnoseRecord, TimelineData } from '../types';
+import { DiagnoseRecord, TimelineData } from '../../types';
 import { getTimeline, getReport, getFixedDoc } from '../../services/api';
 
 interface DiagnosePanelProps {

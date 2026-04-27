@@ -1,21 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Tree, Empty, Spin, Input } from 'antd';
-import { FolderOutlined, FileTextOutlined, CheckCircleOutlined, WarningOutlined } from '@ant-design/icons';
-import { DocNode } from '../types';
+import { FolderOutlined, FileTextOutlined, CheckCircleOutlined } from '@ant-design/icons';
+import { DocNode } from '../../types';
 import { getDocTree } from '../../services/api';
 
 interface DocTreeProps {
   onSelectDoc: (node: DocNode) => void;
   selectedDocPath?: string;
+  defaultSelectFirst?: boolean;
 }
 
-const { Search } = Tree;
-
-const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath }) => {
-  const [treeData, setTreeData] = useState<DocNode[]>([]);
-  const [loading, setLoading] = useState(true);
+const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, defaultSelectFirst = false }) => {
+  const [loading, setLoading] = useState(false);
+  const [treeData, setTreeData] = useState<any[]>([]);
   const [searchValue, setSearchValue] = useState('');
   const [expandedKeys, setExpandedKeys] = useState<string[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  const [firstLoaded, setFirstLoaded] = useState(false);
 
   useEffect(() => {
     loadTree();
@@ -25,12 +26,103 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath }) => {
     try {
       setLoading(true);
       const data = await getDocTree();
-      setTreeData(data);
-      // 默认展开第一层
-      const firstLevelKeys = data
-        .filter(node => node.type === 'directory')
-        .map(node => node.relativePath);
-      setExpandedKeys(firstLevelKeys);
+
+      const transformToAntdTree = (nodes: DocNode[]): any[] => {
+        if (!nodes || nodes.length === 0) return [];
+
+        return nodes.map((node) => {
+          const children = node.children ? transformToAntdTree(node.children) : [];
+
+          return {
+            key: node.relativePath,
+            title: (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '4px 8px',
+                  borderRadius: 4,
+                  transition: 'background 0.2s',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = '#f5f5f5';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'transparent';
+                }}
+              >
+                {node.type === 'directory' ? (
+                  <FolderOutlined style={{ color: '#1890ff', marginRight: 8 }} />
+                ) : (
+                  <FileTextOutlined style={{ color: '#8c8c8c', marginRight: 8 }} />
+                )}
+                <span
+                  style={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                    fontSize: 13,
+                  }}
+                  title={node.name}
+                >
+                  {node.name}
+                </span>
+                {node.diagnoseStatus === 'has-history' && (
+                  <CheckCircleOutlined style={{ color: '#52c41a', fontSize: 12 }} />
+                )}
+              </div>
+            ),
+            icon: node.type === 'directory' ? <FolderOutlined /> : <FileTextOutlined />,
+            isLeaf: node.type === 'file',
+            selectable: node.type === 'file',
+            children: children,
+          };
+        });
+      };
+
+      const transformedData = transformToAntdTree(data);
+      setTreeData(transformedData);
+
+      const collectDirs = (nodes: any[]): string[] => {
+        const keys: string[] = [];
+        for (const node of nodes) {
+          if (node.children && node.children.length > 0) {
+            keys.push(node.key);
+            keys.push(...collectDirs(node.children));
+          }
+        }
+        return keys;
+      };
+
+      const dirs = collectDirs(transformedData);
+      setExpandedKeys(dirs);
+
+      // 默认选中第一个文件
+      if (defaultSelectFirst && !firstLoaded) {
+        const findFirstFile = (nodes: any[]): any => {
+          for (const node of nodes) {
+            if (node.isLeaf) return node;
+            if (node.children) {
+              const found = findFirstFile(node.children);
+              if (found) return found;
+            }
+          }
+          return null;
+        };
+        const firstFile = findFirstFile(transformedData);
+        if (firstFile) {
+          setSelectedKeys([firstFile.key]);
+          onSelectDoc({
+            name: firstFile.key.split('/').pop() || firstFile.key,
+            path: firstFile.key,
+            relativePath: firstFile.key,
+            type: 'file',
+          });
+          setFirstLoaded(true);
+        }
+      }
+
     } catch (error) {
       console.error('Failed to load doc tree:', error);
     } finally {
@@ -38,48 +130,44 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath }) => {
     }
   };
 
-  // 转换数据为antd Tree组件格式
-  const transformToTreeData = (nodes: DocNode[]): any[] => {
-    return nodes.map(node => ({
-      key: node.relativePath,
-      title: (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {node.type === 'directory' ? <FolderOutlined /> : <FileTextOutlined />}
-          <span>{node.name}</span>
-          {node.diagnoseStatus === 'has-history' && (
-            <CheckCircleOutlined style={{ color: '#52c41a', marginLeft: 'auto' }} />
-          )}
-        </div>
-      ),
-      children: node.children ? transformToTreeData(node.children) : undefined,
-      isLeaf: node.type === 'file',
-      icon: node.type === 'directory' ? <FolderOutlined /> : undefined,
-    }));
-  };
+  const filterTree = (nodes: any[], searchText: string): any[] => {
+    if (!searchText) return nodes;
 
-  const handleSelect = (selectedKeys: string[], info: any) => {
-    if (selectedKeys.length > 0) {
-      const selectedPath = selectedKeys[0];
-      // 找到对应的节点
-      const findNode = (nodes: DocNode[]): DocNode | null => {
-        for (const node of nodes) {
-          if (node.relativePath === selectedPath) return node;
-          if (node.children) {
-            const found = findNode(node.children);
-            if (found) return found;
-          }
+    const result: any[] = [];
+    for (const node of nodes) {
+      if (node.title.props.children[2]?.props?.children?.includes(searchText)) {
+        result.push(node);
+      } else if (node.children) {
+        const filteredChildren = filterTree(node.children, searchText);
+        if (filteredChildren.length > 0) {
+          result.push({
+            ...node,
+            children: filteredChildren,
+          });
         }
-        return null;
-      };
-      const node = findNode(treeData);
-      if (node && node.type === 'file') {
-        onSelectDoc(node);
       }
     }
+    return result;
   };
 
-  const handleExpand = (keys: string[]) => {
+  // 处理展开/收起 - 使用onExpand事件
+  const handleExpand = (keys: string[], info: { node: any; expanded: boolean }) => {
+    // 直接使用keys作为新的展开状态
     setExpandedKeys(keys);
+  };
+
+  // 处理选中 - 只处理文件节点
+  const handleSelect = (keys: string[], info: { node: any }) => {
+    const node = info.node;
+    if (node.isLeaf) {
+      setSelectedKeys(keys);
+      onSelectDoc({
+        name: node.key.split('/').pop() || node.key,
+        path: node.key,
+        relativePath: node.key,
+        type: 'file',
+      });
+    }
   };
 
   if (loading) {
@@ -94,22 +182,36 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath }) => {
     return <Empty description="暂无文档" />;
   }
 
+  const displayData = searchValue ? filterTree(treeData, searchValue) : treeData;
+
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Input.Search
-        placeholder="搜索文档"
-        style={{ marginBottom: 16 }}
-        onChange={e => setSearchValue(e.target.value)}
+        placeholder="搜索文档..."
+        style={{ marginBottom: 12 }}
+        onChange={(e) => setSearchValue(e.target.value)}
+        allowClear
       />
-      <div style={{ flex: 1, overflow: 'auto' }}>
+      <div
+        style={{
+          flex: 1,
+          overflow: 'auto',
+          border: '1px solid #f0f0f0',
+          borderRadius: 6,
+          padding: 8,
+        }}
+      >
         <Tree
-          showIcon
+          showIcon={false}
+          showLine
           defaultExpandAll={false}
           expandedKeys={expandedKeys}
+          selectedKeys={selectedKeys}
           onExpand={handleExpand}
           onSelect={handleSelect}
-          selectedKeys={selectedDocPath ? [selectedDocPath] : []}
-          treeData={transformToTreeData(treeData)}
+          treeData={displayData}
+          blockNode
+          selectable
         />
       </div>
     </div>

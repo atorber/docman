@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Space, Input, Select, Spin, message, Checkbox } from 'antd';
 import { CopyOutlined, PlayCircleOutlined } from '@ant-design/icons';
-import { DiagnoseDimension, GeneratePromptResponse } from '../types';
+import { DiagnoseDimension, GeneratePromptResponse } from '../../types';
 import { generatePrompt, getDimensions } from '../../services/api';
 
 const { TextArea } = Input;
