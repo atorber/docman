@@ -1,0 +1,77 @@
+import { GeneratePromptRequest, GeneratePromptResponse } from '../types';
+import { readDocument } from './fileService';
+
+// 诊断维度定义（与skill保持一致）
+const DIMENSIONS = [
+  { id: 1, name: '文档与系统一致性', description: '左侧菜单结构、导航路径、入口位置、操作步骤、页面布局、按钮文案等' },
+  { id: 2, name: '语法错误', description: '句子结构、标点符号、语法规范' },
+  { id: 3, name: '错别字', description: '错别字、同音字错误、形近字错误' },
+  { id: 4, name: '与常识违背', description: '技术参数合理性、客观事实符合性' },
+  { id: 5, name: '前后文冲突', description: '术语统一性、描述一致性' },
+  { id: 6, name: '过时信息', description: '废弃功能/接口、过期版本号' },
+  { id: 7, name: '缺失步骤', description: '操作步骤完整性、关键步骤遗漏' },
+  { id: 8, name: '敏感信息泄露', description: '密码、密钥、Token等凭证信息' },
+  { id: 9, name: '失效链接/图片', description: '超链接有效性、图片可显示性' },
+  { id: 10, name: '格式不一致', description: '标题层级、列表样式、代码块格式' },
+  { id: 11, name: '描述不清晰/有歧义', description: '模糊表述、歧义性表述' },
+  { id: 12, name: '代码示例错误', description: '代码语法、API调用、依赖说明' },
+  { id: 13, name: '截图缺失', description: '关键步骤配图、截图清晰度' },
+  { id: 14, name: '版本兼容性', description: '功能版本适用性、版本号准确性' },
+  { id: 15, name: '冗余内容', description: '重复描述、过时说明' },
+  { id: 16, name: '缺少提示/警告/注意', description: '风险操作警告、重要提示' },
+  { id: 17, name: '命名不规范', description: '文件名规范、标题命名一致' },
+  { id: 18, name: '文档完整性', description: '必要章节、目录结构' },
+];
+
+// 生成诊断prompt
+export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptResponse => {
+  const { documentPath, documentContent, targetUrl, customCheckRequirements, focusDimensions } = request;
+
+  const docName = documentPath.split('/').pop() || documentPath;
+  const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').split('.')[0];
+
+  // 获取要诊断的维度
+  const dimensionsToCheck = focusDimensions
+    ? DIMENSIONS.filter(d => focusDimensions.includes(d.id))
+    : DIMENSIONS;
+
+  const dimensionsList = dimensionsToCheck.map(d => `${d.id}. ${d.name}: ${d.description}`).join('\n');
+
+  // 构建prompt
+  let prompt = `请诊断以下文档的质量问题：\n\n`;
+  prompt += `**文档路径**: ${documentPath}\n`;
+  prompt += `**文档名称**: ${docName}\n\n`;
+
+  if (targetUrl) {
+    prompt += `**目标系统URL**: ${targetUrl}\n\n`;
+  }
+
+  prompt += `## 诊断标准（共${dimensionsToCheck.length}个维度）\n\n`;
+  prompt += dimensionsList + '\n\n';
+
+  if (customCheckRequirements) {
+    prompt += `## 自定义检查要求\n\n`;
+    prompt += `${customCheckRequirements}\n\n`;
+  }
+
+  prompt += `## 诊断要求\n\n`;
+  prompt += `1. 基础诊断：针对上述${dimensionsToCheck.length}个维度进行全面检查\n`;
+  prompt += `2. 一致性检查（可选）：如果提供了目标URL，请使用browser-use打开页面进行实际验证\n`;
+  prompt += `3. 输出要求：\n`;
+  prompt += `   - 诊断报告：保存到 report/ 目录，格式为 [文档名]_[时间戳]_诊断报告.md\n`;
+  prompt += `   - 修复后的文档：保存到 new/ 目录，格式为 [文档名]_[时间戳]new.md\n`;
+  prompt += `   - 过程记录：保存到 timeline/ 目录，格式为 [文档名]_[时间戳]_timeline.json\n`;
+  prompt += `4. 目录结构：保持与 raw/ 相同的子目录结构\n\n`;
+
+  prompt += `请开始诊断并生成报告。`;
+
+  return {
+    prompt,
+    documentPath,
+    documentName: docName,
+    timestamp,
+  };
+};
+
+// 获取所有诊断维度列表
+export const getDimensions = () => DIMENSIONS;
