@@ -192,3 +192,14 @@ export const ensureDir = (dirPath: string): void => {
     fs.mkdirSync(dirPath, { recursive: true });
   }
 };
+
+// 保存修复后的文档
+export const writeFixedDoc = (fixedDocPath: string, content: string): void => {
+  let fullPath = fixedDocPath;
+  if (!fixedDocPath.startsWith('/')) {
+    fullPath = path.join(BASE_DIR, fixedDocPath);
+  }
+  const dir = path.dirname(fullPath);
+  ensureDir(dir);
+  fs.writeFileSync(fullPath, content, 'utf-8');
+};

@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { getDiagnoseHistory, readTimeline, readReport, readFixedDoc } from '../services/fileService';
+import { getDiagnoseHistory, readTimeline, readReport, readFixedDoc, writeFixedDoc } from '../services/fileService';
 
 const router = Router();
 
@@ -70,6 +70,22 @@ router.get('/fixed-doc', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Failed to read fixed doc:', error);
     res.status(500).json({ success: false, error: '读取修复后文档失败' });
+  }
+});
+
+// 保存修复后的文档内容
+router.post('/fixed-doc', (req: Request, res: Response) => {
+  try {
+    const { path: fixedDocPath, content } = req.body;
+    if (!fixedDocPath || typeof content !== 'string') {
+      return res.status(400).json({ success: false, error: '缺少文档路径或内容参数' });
+    }
+
+    writeFixedDoc(fixedDocPath as string, content);
+    res.json({ success: true, data: '保存成功' });
+  } catch (error) {
+    console.error('Failed to write fixed doc:', error);
+    res.status(500).json({ success: false, error: '保存修复后文档失败' });
   }
 });
 

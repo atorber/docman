@@ -62,6 +62,18 @@ export const generatePrompt = async (request: GeneratePromptRequest): Promise<Ge
   return data.data!;
 };
 
+// 保存修复后的文档
+export const saveFixedDoc = async (path: string, content: string): Promise<string> => {
+  const res = await fetch(`${BASE_URL}/diagnoses/fixed-doc`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path, content }),
+  });
+  const data: ApiResponse<string> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
 // 获取诊断维度列表
 export const getDimensions = async (): Promise<DiagnoseDimension[]> => {
   const res = await fetch(`${BASE_URL}/prompt/dimensions`);

@@ -5,10 +5,11 @@ import { FileTextOutlined, HistoryOutlined, FileSearchOutlined, CopyOutlined, Ed
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import * as Diff from 'diff';
 import DocTree from '../components/DocTree';
 import HistoryList from '../components/HistoryList';
 import PromptPanel from '../components/PromptPanel';
-import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree } from '../services/api';
+import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree, saveFixedDoc } from '../services/api';
 import { DocNode, DiagnoseRecord, TimelineData } from '../types';
 
 const { Header, Sider, Content } = Layout;
@@ -34,6 +35,9 @@ const Home: React.FC = () => {
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [fixedContent, setFixedContent] = useState('');
   const [loadingDiagnose, setLoadingDiagnose] = useState(false);
+  const [diffFullscreen, setDiffFullscreen] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState('');
 
   // currentNav 从URL路径派生（只读）
   const currentNav = location.pathname === '/records' ? 'records' : 'diagnose';
@@ -370,6 +374,123 @@ const Home: React.FC = () => {
     );
   };
 
+  // Diff 对比视图渲染
+  const renderDiffView = (opts?: { height?: string; showFullscreen?: boolean }) => {
+    const height = opts?.height ?? 'calc(100vh - 380px)';
+    const showFullscreen = opts?.showFullscreen ?? false;
+
+    if (!fixedContent || fixedContent === '修复后的文档不存在') {
+      return <Empty description="修复后的文档不存在" />;
+    }
+
+    const chunks = Diff.diffLines(docContent || '', fixedContent);
+    const rows: { left: string; right: string; type: 'equal' | 'delete' | 'add' | 'change' }[] = [];
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+
+      const splitLines = (text: string) => {
+        const lines = text.split('\n');
+        if (lines.length > 0 && lines[lines.length - 1] === '') {
+          lines.pop();
+        }
+        return lines;
+      };
+
+      if (!chunk.added && !chunk.removed) {
+        const lines = splitLines(chunk.value);
+        for (const line of lines) {
+          rows.push({ left: line, right: line, type: 'equal' });
+        }
+      } else if (chunk.removed) {
+        const nextChunk = chunks[i + 1];
+        if (nextChunk && nextChunk.added) {
+          const leftLines = splitLines(chunk.value);
+          const rightLines = splitLines(nextChunk.value);
+          const maxLen = Math.max(leftLines.length, rightLines.length);
+          for (let j = 0; j < maxLen; j++) {
+            rows.push({
+              left: leftLines[j] !== undefined ? leftLines[j] : '',
+              right: rightLines[j] !== undefined ? rightLines[j] : '',
+              type: 'change',
+            });
+          }
+          i++;
+        } else {
+          const lines = splitLines(chunk.value);
+          for (const line of lines) {
+            rows.push({ left: line, right: '', type: 'delete' });
+          }
+        }
+      } else if (chunk.added) {
+        const lines = splitLines(chunk.value);
+        for (const line of lines) {
+          rows.push({ left: '', right: line, type: 'add' });
+        }
+      }
+    }
+
+    const lineBg = (type: string, side: 'left' | 'right') => {
+      if (type === 'equal') return 'transparent';
+      if (type === 'delete') return side === 'left' ? '#ffebe9' : '#f0f0f0';
+      if (type === 'add') return side === 'left' ? '#f0f0f0' : '#dafbe1';
+      if (type === 'change') return side === 'left' ? '#ffebe9' : '#dafbe1';
+      return 'transparent';
+    };
+
+    const lineNumColor = '#6e7781';
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height, border: '1px solid #d0d7de', borderRadius: 6, overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', background: '#f6f8fa', borderBottom: '1px solid #d0d7de', fontSize: 12, fontWeight: 600, color: '#57606a', alignItems: 'center' }}>
+          <div style={{ flex: 1, padding: '8px 12px', borderRight: '1px solid #d0d7de' }}>原始文档</div>
+          <div style={{ flex: 1, padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span>修复后文档</span>
+            {showFullscreen && (
+              <Space>
+                <Button type="link" size="small" icon={<EditOutlined />} onClick={() => { setDiffFullscreen(true); setIsEditing(true); setEditContent(fixedContent); }}>
+                  编辑
+                </Button>
+                <Button type="link" size="small" icon={<CopyOutlined />} onClick={() => handleCopy(fixedContent)}>
+                  复制修复后文档
+                </Button>
+                <Button type="link" size="small" onClick={() => setDiffFullscreen(true)}>
+                  全屏查看
+                </Button>
+              </Space>
+            )}
+          </div>
+        </div>
+        {/* Diff rows */}
+        <div style={{ flex: 1, overflow: 'auto', fontFamily: 'monospace', fontSize: 13, lineHeight: '20px' }}>
+          {rows.map((row, idx) => (
+            <div key={idx} style={{ display: 'flex', minHeight: 20 }}>
+              {/* Left side */}
+              <div style={{ display: 'flex', flex: 1, background: lineBg(row.type, 'left'), borderRight: '1px solid #d0d7de' }}>
+                <span style={{ width: 40, textAlign: 'right', paddingRight: 8, color: lineNumColor, userSelect: 'none', borderRight: '1px solid #d0d7de' }}>
+                  {row.left !== '' ? idx + 1 : ''}
+                </span>
+                <span style={{ flex: 1, paddingLeft: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {row.left}
+                </span>
+              </div>
+              {/* Right side */}
+              <div style={{ display: 'flex', flex: 1, background: lineBg(row.type, 'right') }}>
+                <span style={{ width: 40, textAlign: 'right', paddingRight: 8, color: lineNumColor, userSelect: 'none', borderRight: '1px solid #d0d7de' }}>
+                  {row.right !== '' ? idx + 1 : ''}
+                </span>
+                <span style={{ flex: 1, paddingLeft: 8, whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                  {row.right}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   // 基础 Tab
   const tabItems = [
     {
@@ -495,11 +616,10 @@ const Home: React.FC = () => {
                         <Spin size="large" />
                       </div>
                     ) : (
-                      <div>
-                        <Button type="link" icon={<CopyOutlined />} onClick={() => handleCopy(fixedContent)} style={{ float: 'right' }} size="small">复制</Button>
-                        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', maxHeight: 'calc(100vh - 380px)', overflow: 'auto', background: '#f0f8ff', padding: 16, borderRadius: 6, fontSize: 13, lineHeight: 1.6, marginTop: 8 }}>
-                          {fixedContent}
-                        </pre>
+                      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                          {renderDiffView({ showFullscreen: true })}
+                        </div>
                       </div>
                     ),
                   },
@@ -608,8 +728,77 @@ const Home: React.FC = () => {
     navigate(`?${params.toString()}`, { replace: true });
   };
 
+  const handleStartEdit = () => {
+    setEditContent(fixedContent);
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedRecord) return;
+    try {
+      await saveFixedDoc(selectedRecord.fixedDocPath, editContent);
+      setFixedContent(editContent);
+      setIsEditing(false);
+      message.success('修复后文档已保存');
+    } catch (error) {
+      console.error('Failed to save fixed doc:', error);
+      message.error('保存失败');
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditContent('');
+  };
+
   return (
     <Layout style={{ minHeight: '100vh' }}>
+      {diffFullscreen && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#fff', display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0 }}>
+              {selectedDoc?.name} — {isEditing ? '编辑修复后文档' : '文档对比'}
+            </h3>
+            <Space>
+              {isEditing ? (
+                <>
+                  <Button type="primary" onClick={handleSaveEdit}>保存</Button>
+                  <Button onClick={handleCancelEdit}>取消</Button>
+                </>
+              ) : (
+                <>
+                  <Button type="primary" icon={<EditOutlined />} onClick={handleStartEdit}>编辑</Button>
+                  <Button onClick={() => setDiffFullscreen(false)}>退出全屏</Button>
+                </>
+              )}
+            </Space>
+          </div>
+          <div style={{ flex: 1, padding: 16, overflow: 'hidden' }}>
+            {isEditing ? (
+              <div style={{ display: 'flex', height: '100%', gap: 16 }}>
+                {/* 左侧：原文档（只读） */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid #d0d7de', borderRadius: 6, overflow: 'hidden' }}>
+                  <div style={{ padding: '8px 12px', background: '#f6f8fa', borderBottom: '1px solid #d0d7de', fontSize: 12, fontWeight: 600, color: '#57606a' }}>原始文档（只读）</div>
+                  <pre style={{ flex: 1, margin: 0, padding: 12, overflow: 'auto', fontFamily: 'monospace', fontSize: 13, lineHeight: '20px', background: '#fafafa', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
+                    {docContent}
+                  </pre>
+                </div>
+                {/* 右侧：修复后文档（可编辑） */}
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', border: '1px solid #d0d7de', borderRadius: 6, overflow: 'hidden' }}>
+                  <div style={{ padding: '8px 12px', background: '#f6f8fa', borderBottom: '1px solid #d0d7de', fontSize: 12, fontWeight: 600, color: '#57606a' }}>修复后文档（编辑中）</div>
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => setEditContent(e.target.value)}
+                    style={{ flex: 1, padding: 12, border: 'none', outline: 'none', resize: 'none', fontFamily: 'monospace', fontSize: 13, lineHeight: '20px', background: '#fff', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
+                  />
+                </div>
+              </div>
+            ) : (
+              renderDiffView({ height: '100%', showFullscreen: false })
+            )}
+          </div>
+        </div>
+      )}
       <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 24 }}>
         <h2 style={{ margin: 0, lineHeight: '64px' }}>DocMan</h2>
         <Menu
