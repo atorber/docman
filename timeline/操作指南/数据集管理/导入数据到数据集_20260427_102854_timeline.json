@@ -1,0 +1,347 @@
+{
+  "task_id": "doc-diagnosis-20260427-102854",
+  "document": {
+    "name": "导入数据到数据集.md",
+    "path": "操作指南/数据集管理/导入数据到数据集.md"
+  },
+  "target_url": "https://console.bce.baidu.com/aihc/dataset/info?tab=versions&datasetId=ds-iXr4SZD&name=regress-dataset-vgnv&type=BOS",
+  "start_time": "2026-04-27T10:28:54Z",
+  "end_time": "2026-04-27T10:32:00Z",
+  "duration_seconds": 186,
+  "status": "completed",
+  "dimensions": [
+    {
+      "id": 1,
+      "name": "文档与系统一致性",
+      "status": "partial",
+      "start_time": "2026-04-27T10:30:00Z",
+      "end_time": "2026-04-27T10:30:30Z",
+      "duration_ms": 30000,
+      "issue_count": 0,
+      "issues": [],
+      "notes": "需要登录才能访问目标页面，无法完成完整验证"
+    },
+    {
+      "id": 2,
+      "name": "语法错误",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:00Z",
+      "end_time": "2026-04-27T10:29:05Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "punctuation",
+          "severity": "medium",
+          "description": "存储类型支持列中缺少分隔符",
+          "location": "第8行",
+          "suggestion": "添加逗号或其他分隔符"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "错别字",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:05Z",
+      "end_time": "2026-04-27T10:29:10Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 4,
+      "name": "与常识违背",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:10Z",
+      "end_time": "2026-04-27T10:29:15Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "logic_error",
+          "severity": "high",
+          "description": "冲突策略描述存在逻辑矛盾",
+          "location": "第36行",
+          "suggestion": "明确说明冲突策略的三种选择及其含义"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "前后文冲突",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:15Z",
+      "end_time": "2026-04-27T10:29:20Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "terminology_inconsistency",
+          "severity": "medium",
+          "description": "术语使用不统一：导入数据 vs 数据导入",
+          "location": "第13、15、24、27行",
+          "suggestion": "统一使用'导入数据'作为按钮名称"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "过时信息",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:20Z",
+      "end_time": "2026-04-27T10:29:25Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "version_outdated",
+          "severity": "medium",
+          "description": "PFS类型描述可能不准确",
+          "location": "第8行",
+          "suggestion": "确认当前支持的PFS存储类型"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "name": "缺失步骤",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:25Z",
+      "end_time": "2026-04-27T10:29:30Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 8,
+      "name": "敏感信息泄露",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:30Z",
+      "end_time": "2026-04-27T10:29:35Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 9,
+      "name": "失效链接/图片",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:35Z",
+      "end_time": "2026-04-27T10:29:45Z",
+      "duration_ms": 10000,
+      "issue_count": 0,
+      "issues": [],
+      "notes": "两个图片链接均有效"
+    },
+    {
+      "id": 10,
+      "name": "格式不一致",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:45Z",
+      "end_time": "2026-04-27T10:29:55Z",
+      "duration_ms": 10000,
+      "issue_count": 2,
+      "issues": [
+        {
+          "type": "table_format",
+          "severity": "high",
+          "description": "表格中'冲突策略'参数的说明跨多行",
+          "location": "第35-37行",
+          "suggestion": "调整表格内容到单个单元格内"
+        },
+        {
+          "type": "heading_format",
+          "severity": "high",
+          "description": "多处列表和标题格式不统一",
+          "location": "全文",
+          "suggestion": "统一使用Markdown标准格式"
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "name": "描述不清晰/有歧义",
+      "status": "completed",
+      "start_time": "2026-04-27T10:29:55Z",
+      "end_time": "2026-04-27T10:30:00Z",
+      "duration_ms": 5000,
+      "issue_count": 2,
+      "issues": [
+        {
+          "type": "ambiguous_description",
+          "severity": "low",
+          "description": "冲突策略说明有歧义",
+          "location": "第35-37行",
+          "suggestion": "重新表述为更清晰的语言"
+        },
+        {
+          "type": "insufficient_details",
+          "severity": "low",
+          "description": "使用说明过于简单",
+          "location": "第244行",
+          "suggestion": "添加更详细的使用说明或链接"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "代码示例错误",
+      "status": "completed",
+      "start_time": "2026-04-27T10:30:30Z",
+      "end_time": "2026-04-27T10:30:45Z",
+      "duration_ms": 15000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "undefined_variable",
+          "severity": "high",
+          "description": "使用了未定义的变量$DATASET_NAME_ESCAPED",
+          "location": "第94行",
+          "suggestion": "改为$DATASET_NAME"
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "截图缺失",
+      "status": "completed",
+      "start_time": "2026-04-27T10:30:45Z",
+      "end_time": "2026-04-27T10:30:50Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": [],
+      "notes": "已提供关键步骤截图"
+    },
+    {
+      "id": 14,
+      "name": "版本兼容性",
+      "status": "completed",
+      "start_time": "2026-04-27T10:30:50Z",
+      "end_time": "2026-04-27T10:30:55Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "version_incompatible",
+          "severity": "medium",
+          "description": "镜像版本号可能过时",
+          "location": "第81行",
+          "suggestion": "验证并更新镜像版本号"
+        }
+      ]
+    },
+    {
+      "id": 15,
+      "name": "冗余内容",
+      "status": "completed",
+      "start_time": "2026-04-27T10:30:55Z",
+      "end_time": "2026-04-27T10:31:00Z",
+      "duration_ms": 5000,
+      "issue_count": 3,
+      "issues": [
+        {
+          "type": "commented_code",
+          "severity": "low",
+          "description": "代码中存在注释掉的代码",
+          "location": "第224、228、232行",
+          "suggestion": "删除或优化注释掉的代码"
+        }
+      ]
+    },
+    {
+      "id": 16,
+      "name": "缺少提示/警告/注意",
+      "status": "completed",
+      "start_time": "2026-04-27T10:31:00Z",
+      "end_time": "2026-04-27T10:31:05Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "missing_security_warning",
+          "severity": "high",
+          "description": "自定义下载缺少安全风险提示",
+          "location": "第45-74行",
+          "suggestion": "添加安全提示，说明脚本执行风险"
+        }
+      ]
+    },
+    {
+      "id": 17,
+      "name": "命名不规范",
+      "status": "completed",
+      "start_time": "2026-04-27T10:31:05Z",
+      "end_time": "2026-04-27T10:31:10Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "shebang_inconsistent",
+          "severity": "high",
+          "description": "三个脚本的shebang声明不统一",
+          "location": "第88、120、181行",
+          "suggestion": "统一使用#!/bin/bash"
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "文档完整性",
+      "status": "completed",
+      "start_time": "2026-04-27T10:31:10Z",
+      "end_time": "2026-04-27T10:31:15Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "missing_section",
+          "severity": "low",
+          "description": "缺少常见问题章节",
+          "location": "全文",
+          "suggestion": "添加常见问题章节"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_issues": 15,
+    "by_severity": {
+      "high": 5,
+      "medium": 4,
+      "low": 6
+    },
+    "by_dimension": {
+      "文档与系统一致性": 0,
+      "语法错误": 1,
+      "错别字": 0,
+      "与常识违背": 1,
+      "前后文冲突": 1,
+      "过时信息": 1,
+      "缺失步骤": 0,
+      "敏感信息泄露": 0,
+      "失效链接/图片": 0,
+      "格式不一致": 2,
+      "描述不清晰/有歧义": 2,
+      "代码示例错误": 1,
+      "截图缺失": 0,
+      "版本兼容性": 1,
+      "冗余内容": 3,
+      "缺少提示/警告/注意": 1,
+      "命名不规范": 1,
+      "文档完整性": 1
+    }
+  },
+  "outputs": {
+    "report": "report/操作指南/数据集管理/导入数据到数据集_20260427_102854_report.md",
+    "fixed_doc": "new/操作指南/数据集管理/导入数据到数据集_20260427_102854_new.md",
+    "timeline": "timeline/操作指南/数据集管理/导入数据到数据集_20260427_102854_timeline.json"
+  },
+  "errors": [
+    {
+      "code": "REQUIRES_LOGIN",
+      "message": "目标页面需要登录才能访问，无法进行完整的系统一致性验证",
+      "dimension": "文档与系统一致性"
+    }
+  ]
+}

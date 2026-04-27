@@ -1,0 +1,257 @@
+{
+  "task_id": "doc-diagnose-20260427-094216",
+  "document": {
+    "name": "创建数据集.md",
+    "path": "raw/操作指南/数据集管理/创建数据集.md"
+  },
+  "target_url": "https://console.bce.baidu.com/aihc/datasets",
+  "start_time": "2026-04-27T09:42:16Z",
+  "end_time": "2026-04-27T09:45:00Z",
+  "duration_seconds": 164,
+  "status": "completed",
+  "dimensions": [
+    {
+      "id": 1,
+      "name": "文档与系统一致性",
+      "status": "completed",
+      "start_time": "2026-04-27T09:42:20Z",
+      "end_time": "2026-04-27T09:50:00Z",
+      "duration_ms": 180000,
+      "issue_count": 0,
+      "issues": [],
+      "verification_result": {
+        "menu_path": "AI资产管理 > 数据集",
+        "field_comparison": {
+          "名称": "一致",
+          "存储类型": "一致",
+          "存储实例": "一致",
+          "导入格式": "一致",
+          "描述": "一致",
+          "所有者": "一致",
+          "使用权限": "一致",
+          "版本": "一致",
+          "版本描述": "一致",
+          "存储路径": "一致",
+          "默认挂载路径": "一致"
+        },
+        "conclusion": "文档与系统完全一致"
+      }
+    },
+    {
+      "id": 2,
+      "name": "语法错误",
+      "status": "completed",
+      "start_time": "2026-04-27T09:43:35Z",
+      "end_time": "2026-04-27T09:43:45Z",
+      "duration_ms": 10000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "syntax",
+          "severity": "medium",
+          "description": "使用权限字段列举项标点使用不当",
+          "location": "第27行"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "错别字",
+      "status": "completed",
+      "start_time": "2026-04-27T09:43:45Z",
+      "end_time": "2026-04-27T09:43:50Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 4,
+      "name": "与常识违背",
+      "status": "completed",
+      "start_time": "2026-04-27T09:43:50Z",
+      "end_time": "2026-04-27T09:43:55Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 5,
+      "name": "前后文冲突",
+      "status": "completed",
+      "start_time": "2026-04-27T09:43:55Z",
+      "end_time": "2026-04-27T09:44:00Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 6,
+      "name": "过时信息",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:00Z",
+      "end_time": "2026-04-27T09:44:05Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 7,
+      "name": "缺失步骤",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:05Z",
+      "end_time": "2026-04-27T09:44:10Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 8,
+      "name": "敏感信息泄露",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:10Z",
+      "end_time": "2026-04-27T09:44:15Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 9,
+      "name": "失效链接/图片",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:15Z",
+      "end_time": "2026-04-27T09:44:25Z",
+      "duration_ms": 10000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "broken_link",
+          "severity": "high",
+          "description": "图片链接失效",
+          "location": "第46行，数据集-创建训练任务2.png"
+        }
+      ]
+    },
+    {
+      "id": 10,
+      "name": "格式不一致",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:25Z",
+      "end_time": "2026-04-27T09:44:30Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 11,
+      "name": "描述不清晰/有歧义",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:30Z",
+      "end_time": "2026-04-27T09:44:35Z",
+      "duration_ms": 5000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "unclear",
+          "severity": "medium",
+          "description": "使用权限字段描述过于复杂",
+          "location": "第27行"
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "name": "代码示例错误",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:35Z",
+      "end_time": "2026-04-27T09:44:40Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 13,
+      "name": "截图缺失",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:40Z",
+      "end_time": "2026-04-27T09:44:45Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 14,
+      "name": "版本兼容性",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:45Z",
+      "end_time": "2026-04-27T09:44:50Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 15,
+      "name": "冗余内容",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:50Z",
+      "end_time": "2026-04-27T09:44:55Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 16,
+      "name": "缺少提示/警告/注意",
+      "status": "completed",
+      "start_time": "2026-04-27T09:44:55Z",
+      "end_time": "2026-04-27T09:45:00Z",
+      "duration_ms": 5000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 17,
+      "name": "命名不规范",
+      "status": "completed",
+      "start_time": "2026-04-27T09:45:00Z",
+      "end_time": "2026-04-27T09:45:03Z",
+      "duration_ms": 3000,
+      "issue_count": 0,
+      "issues": []
+    },
+    {
+      "id": 18,
+      "name": "文档完整性",
+      "status": "completed",
+      "start_time": "2026-04-27T09:45:03Z",
+      "end_time": "2026-04-27T09:45:06Z",
+      "duration_ms": 3000,
+      "issue_count": 1,
+      "issues": [
+        {
+          "type": "incomplete",
+          "severity": "low",
+          "description": "缺少数据集后续管理操作说明",
+          "location": "全文档"
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "total_issues": 4,
+    "by_severity": {
+      "high": 1,
+      "medium": 2,
+      "low": 1
+    },
+    "by_dimension": {
+      "失效链接/图片": 1,
+      "语法错误": 1,
+      "描述不清晰/有歧义": 1,
+      "文档完整性": 1
+    }
+  },
+  "outputs": {
+    "report": "report/操作指南/数据集管理/创建数据集_20260427_094216_report.md",
+    "fixed_doc": "new/操作指南/数据集管理/创建数据集_20260427_094216_new.md"
+  }
+}
