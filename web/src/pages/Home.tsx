@@ -38,6 +38,7 @@ const Home: React.FC = () => {
   const [diffFullscreen, setDiffFullscreen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
+  const [isPreviewing, setIsPreviewing] = useState(false);
 
   // currentNav 从URL路径派生（只读）
   const currentNav = location.pathname === '/records' ? 'records' : 'diagnose';
@@ -757,7 +758,7 @@ const Home: React.FC = () => {
         <div style={{ position: 'fixed', inset: 0, zIndex: 1000, background: '#fff', display: 'flex', flexDirection: 'column' }}>
           <div style={{ padding: '12px 16px', borderBottom: '1px solid #f0f0f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <h3 style={{ margin: 0 }}>
-              {selectedDoc?.name} — {isEditing ? '编辑修复后文档' : '文档对比'}
+              {selectedDoc?.name} — {isEditing ? '编辑修复后文档' : isPreviewing ? '修复后文档预览' : '文档对比'}
             </h3>
             <Space>
               {isEditing ? (
@@ -767,7 +768,14 @@ const Home: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Button type="primary" icon={<EditOutlined />} onClick={handleStartEdit}>编辑</Button>
+                  {isPreviewing ? (
+                    <Button icon={<EditOutlined />} onClick={() => setIsPreviewing(false)}>返回对比</Button>
+                  ) : (
+                    <>
+                      <Button icon={<EyeOutlined />} onClick={() => setIsPreviewing(true)}>预览</Button>
+                      <Button type="primary" icon={<EditOutlined />} onClick={handleStartEdit}>编辑</Button>
+                    </>
+                  )}
                   <Button onClick={() => setDiffFullscreen(false)}>退出全屏</Button>
                 </>
               )}
@@ -792,6 +800,10 @@ const Home: React.FC = () => {
                     style={{ flex: 1, padding: 12, border: 'none', outline: 'none', resize: 'none', fontFamily: 'monospace', fontSize: 13, lineHeight: '20px', background: '#fff', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                   />
                 </div>
+              </div>
+            ) : isPreviewing ? (
+              <div style={{ height: '100%', overflow: 'auto', background: '#fff', padding: 24, border: '1px solid #d0d7de', borderRadius: 6 }}>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{fixedContent}</ReactMarkdown>
               </div>
             ) : (
               renderDiffView({ height: '100%', showFullscreen: false })
