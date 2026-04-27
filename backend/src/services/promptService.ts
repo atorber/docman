@@ -2,7 +2,7 @@ import { GeneratePromptRequest, GeneratePromptResponse } from '../types';
 
 // 生成调用skill的诊断指令
 export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptResponse => {
-  const { documentPath, targetUrl, customCheckRequirements, focusDimensions, useLoggedInBrowser } = request;
+  const { documentPath, targetUrl, customCheckRequirements, focusDimensions, useLoggedInBrowser, showBrowserUI } = request;
 
   const docName = documentPath.split('/').pop() || documentPath;
   const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').split('.')[0];
@@ -36,6 +36,10 @@ export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptRe
   if (targetUrl && useLoggedInBrowser) {
     prompt += `- 使用已登录浏览器: 是\n`;
     prompt += `- 浏览器模式: 保持窗口（reuse-existing-window）\n`;
+  }
+
+  if (targetUrl && showBrowserUI) {
+    prompt += `- 显示浏览器界面: 是\n`;
   }
 
   prompt += `\n`;
