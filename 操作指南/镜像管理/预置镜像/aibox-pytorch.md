@@ -1,0 +1,1 @@
+Pytorch镜像基于 pytorch/pytorch 镜像构建，整合标准torch环境、GPU 编译器、开发工具，内含常用命令行工具和RDMA基础库。该镜像开箱即用，为AI开发、训练和推理提供完整的PyTorch生态支持。
