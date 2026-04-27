@@ -17,6 +17,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ documentPath, documentName })
   const [selectedDimensions, setSelectedDimensions] = useState<number[]>([]);
   const [targetUrl, setTargetUrl] = useState('');
   const [customRequirements, setCustomRequirements] = useState('');
+  const [useLoggedInBrowser, setUseLoggedInBrowser] = useState(true);
   const [generatedPrompt, setGeneratedPrompt] = useState('');
 
   // 加载诊断维度
@@ -46,6 +47,7 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ documentPath, documentName })
         targetUrl: targetUrl || undefined,
         customCheckRequirements: customRequirements || undefined,
         focusDimensions: selectedDimensions.length === dimensions.length ? undefined : selectedDimensions,
+        useLoggedInBrowser: targetUrl ? useLoggedInBrowser : false,
       });
       setGeneratedPrompt(result.prompt);
     } catch (e) {
@@ -82,6 +84,21 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ documentPath, documentName })
             onChange={e => setTargetUrl(e.target.value)}
           />
         </div>
+
+        {/* 浏览器配置 */}
+        {targetUrl && (
+          <div>
+            <Checkbox
+              checked={useLoggedInBrowser}
+              onChange={e => setUseLoggedInBrowser(e.target.checked)}
+            >
+              使用已登录浏览器（推荐）
+            </Checkbox>
+            <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4, marginLeft: 24 }}>
+              勾选后将复用已有的浏览器窗口，无需重复登录。请保持浏览器窗口打开状态。
+            </div>
+          </div>
+        )}
 
         {/* 自定义检查要求 */}
         <div>

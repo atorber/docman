@@ -2,41 +2,46 @@ import { GeneratePromptRequest, GeneratePromptResponse } from '../types';
 
 // 生成调用skill的诊断指令
 export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptResponse => {
-  const { documentPath, targetUrl, customCheckRequirements, focusDimensions } = request;
+  const { documentPath, targetUrl, customCheckRequirements, focusDimensions, useLoggedInBrowser } = request;
 
   const docName = documentPath.split('/').pop() || documentPath;
   const timestamp = new Date().toISOString().replace(/[-:]/g, '').replace('T', '_').split('.')[0];
 
-  // 构建调用skill的指令
-  let prompt = `# 文档诊断任务\n\n`;
-  prompt += `请使用「doc-consistency-verifier」skill对以下文档进行诊断。\n\n`;
-  prompt += `**原始文档路径**: raw/${documentPath}\n`;
-  prompt += `**文档名称**: ${docName}\n\n`;
+  // 构建调用skill的指令（精简版，只包含动态参数）
+  let prompt = `请使用「doc-consistency-verifier」skill执行以下文档诊断任务。\n\n`;
+  prompt += `# 文档诊断\n\n`;
+  prompt += `## 文档信息\n`;
+  prompt += `- 原始文档路径: raw/${documentPath}\n`;
+  prompt += `- 文档名称: ${docName}\n\n`;
 
-  if (targetUrl) {
-    prompt += `**目标系统URL**: ${targetUrl}\n\n`;
-  }
+  prompt += `## 诊断配置\n`;
 
   // 添加诊断维度编号
   if (focusDimensions && focusDimensions.length > 0) {
-    prompt += `**需要诊断的维度编号**: ${focusDimensions.join(', ')}\n\n`;
+    prompt += `- 维度编号: ${focusDimensions.join(', ')}\n`;
   } else if (!focusDimensions) {
     // focusDimensions 为 undefined 时，默认全选所有维度（1-18）
-    prompt += `**需要诊断的维度编号**: ${Array.from({length: 18}, (_, i) => i + 1).join(', ')}\n\n`;
+    prompt += `- 维度编号: ${Array.from({length: 18}, (_, i) => i + 1).join(', ')}\n`;
+  }
+
+  if (targetUrl) {
+    prompt += `- 目标URL: ${targetUrl}\n`;
   }
 
   if (customCheckRequirements) {
-    prompt += `**自定义检查要求**: ${customCheckRequirements}\n\n`;
+    prompt += `- 自定义要求: ${customCheckRequirements}\n`;
   }
 
-  prompt += `请执行以下操作：\n`;
-  prompt += `1. 读取原始文档内容\n`;
-  prompt += `2. 根据选定的诊断维度进行全面检查\n`;
-  prompt += `3. 如提供目标URL，使用browser-use进行一致性验证，并且如果目标URL需要登录则等待用户手动登录之后确认再继续执行；如果没有提供URL，则跳过一致性验证\n`;
-  prompt += `4. 生成诊断报告，保存到：report/${documentPath.replace('.md', '')}_${timestamp}_report.md\n`;
-  prompt += `5. 生成修复后的文档，保存到：new/${documentPath.replace('.md', '')}_${timestamp}_new.md\n`;
-  prompt += `6. 生成过程记录，保存到：timeline/${documentPath.replace('.md', '')}_${timestamp}_timeline.json\n\n`;
-  prompt += `请开始执行诊断任务。`;
+  // 添加浏览器配置
+  if (targetUrl && useLoggedInBrowser) {
+    prompt += `- 使用已登录浏览器: 是\n`;
+    prompt += `- 浏览器模式: 保持窗口（reuse-existing-window）\n`;
+  }
+
+  prompt += `\n`;
+  prompt += `## 输出配置\n`;
+  prompt += `- 时间戳: ${timestamp}\n\n`;
+  prompt += `请按照「doc-consistency-verifier」skill中的「执行流程」完成诊断任务。`;
 
   return {
     prompt,

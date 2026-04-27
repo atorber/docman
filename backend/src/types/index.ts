@@ -86,6 +86,7 @@ export interface GeneratePromptRequest {
   targetUrl?: string;
   customCheckRequirements?: string;
   focusDimensions?: number[];
+  useLoggedInBrowser?: boolean;
 }
 
 // Prompt生成响应
