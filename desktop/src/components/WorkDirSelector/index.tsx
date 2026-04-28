@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal, Button, Space, message, Typography } from 'antd';
 import { FolderOpenOutlined, ReloadOutlined } from '@ant-design/icons';
 import { open } from '@tauri-apps/plugin-dialog';
-import { getWorkDirectory, setWorkDirectory } from '../services/api';
+import { getWorkDirectory, setWorkDirectory } from '../../services/api';
 
 const { Text, Title } = Typography;
 

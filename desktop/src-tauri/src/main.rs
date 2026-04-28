@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    docman_desktop_lib::run()
+    docman_desktop::run()
 }

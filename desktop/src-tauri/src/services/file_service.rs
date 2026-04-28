@@ -13,13 +13,6 @@ pub fn get_work_dir(work_dir: &State<WorkDirState>) -> Option<PathBuf> {
     dir.as_ref().map(|d| PathBuf::from(d))
 }
 
-/// 设置工作目录
-pub fn set_work_dir(work_dir: &State<WorkDirState>, path: &str) {
-    if let Ok(mut dir) = work_dir.lock() {
-        *dir = Some(path.to_string());
-    }
-}
-
 /// 获取 raw 目录路径
 fn get_raw_path(work_dir: &State<WorkDirState>) -> Option<PathBuf> {
     get_work_dir(work_dir).map(|d| d.join("raw"))
@@ -30,14 +23,14 @@ fn get_timeline_path(work_dir: &State<WorkDirState>) -> Option<PathBuf> {
     get_work_dir(work_dir).map(|d| d.join("timeline"))
 }
 
-/// 获取 report 目录路径
-fn get_report_path(work_dir: &State<WorkDirState>) -> Option<PathBuf> {
-    get_work_dir(work_dir).map(|d| d.join("report"))
+/// 安全地将路径转换为字符串
+fn path_to_string(path: &PathBuf) -> String {
+    path.to_str().unwrap_or("").to_string()
 }
 
-/// 获取 new (修复后文档) 目录路径
-fn get_new_path(work_dir: &State<WorkDirState>) -> Option<PathBuf> {
-    get_work_dir(work_dir).map(|d| d.join("new"))
+/// 安全地将 OsStr 转换为字符串
+fn osstr_to_string(s: &std::ffi::OsStr) -> String {
+    s.to_str().unwrap_or("").to_string()
 }
 
 /// 构建文档目录树
@@ -45,7 +38,7 @@ pub fn build_doc_tree(work_dir: &State<WorkDirState>) -> Result<Vec<DocNode>, St
     let raw_path = get_raw_path(work_dir).ok_or("工作目录未设置")?;
     
     if !raw_path.exists() {
-        return Err("raw 目录不存在".to_string());
+        return Err(format!("raw 目录不存在: {:?}", raw_path));
     }
     
     Ok(build_doc_tree_recursive(&raw_path, &raw_path, work_dir))
@@ -63,15 +56,23 @@ fn build_doc_tree_recursive(
 
     let mut nodes: Vec<DocNode> = entries
         .filter_map(|entry| entry.ok())
-        .filter(|entry| !entry.file_name().to_string_lossy().starts_with('.'))
+        .filter(|entry| {
+            let name = entry.file_name();
+            name.to_str().map(|s| !s.starts_with('.')).unwrap_or(false)
+        })
         .map(|entry| {
             let path = entry.path();
-            let relative_path = path.strip_prefix(raw_path).unwrap_or(&path).to_string_lossy().to_string();
+            let relative_path = match path.strip_prefix(raw_path) {
+                Ok(p) => p.to_str().unwrap_or("").to_string(),
+                Err(_) => "".to_string(),
+            };
             let is_dir = path.is_dir();
             
+            let name = osstr_to_string(&entry.file_name());
+            
             let mut node = DocNode {
-                name: entry.file_name().to_string_lossy().to_string(),
-                path: path.to_string_lossy().to_string(),
+                name: name.clone(),
+                path: path_to_string(&path),
                 relative_path: relative_path.clone(),
                 node_type: if is_dir { "directory".to_string() } else { "file".to_string() },
                 children: None,
@@ -133,14 +134,9 @@ pub fn get_diagnose_history(
 
     let doc_name = PathBuf::from(document_relative_path)
         .file_stem()
-        .and_then(|n| n.to_str())
+        .map(|s| s.to_str().unwrap_or(""))
         .unwrap_or("")
         .to_string();
-    
-    let doc_dir = PathBuf::from(document_relative_path)
-        .parent()
-        .map(|p| p.to_string_lossy().to_string())
-        .unwrap_or_default();
 
     let mut records: Vec<DiagnoseRecord> = vec![];
 
@@ -148,21 +144,37 @@ pub fn get_diagnose_history(
     for entry in WalkDir::new(&timeline_path)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_name().to_string_lossy().ends_with("_timeline.json"))
+        .filter(|e| {
+            e.file_name()
+                .to_str()
+                .map(|s| s.ends_with("_timeline.json"))
+                .unwrap_or(false)
+        })
     {
-        let file_name = entry.file_name().to_string_lossy().to_string();
+        let file_name = osstr_to_string(entry.file_name());
         let base_name = file_name.replace("_timeline.json", "");
         
         // 检查是否匹配当前文档
-        if base_name.starts_with(&format!("{}_", doc_name)) {
+        let pattern = format!("{}_", doc_name);
+        if base_name.starts_with(&pattern) {
             if let Ok(content) = fs::read_to_string(entry.path()) {
                 if let Ok(timeline) = serde_json::from_str::<TimelineData>(&content) {
                     let base_dir = get_work_dir(work_dir);
                     let report_path = base_dir.as_ref()
-                        .map(|d| d.join(&timeline.outputs.report).to_string_lossy().to_string())
+                        .map(|d| {
+                            d.join(&timeline.outputs.report)
+                                .to_str()
+                                .unwrap_or("")
+                                .to_string()
+                        })
                         .unwrap_or_default();
                     let fixed_doc_path = base_dir.as_ref()
-                        .map(|d| d.join(&timeline.outputs.fixed_doc).to_string_lossy().to_string())
+                        .map(|d| {
+                            d.join(&timeline.outputs.fixed_doc)
+                                .to_str()
+                                .unwrap_or("")
+                                .to_string()
+                        })
                         .unwrap_or_default();
 
                     records.push(DiagnoseRecord {
@@ -170,7 +182,7 @@ pub fn get_diagnose_history(
                         document_path: document_relative_path.to_string(),
                         document_name: PathBuf::from(document_relative_path)
                             .file_name()
-                            .and_then(|n| n.to_str())
+                            .map(|s| s.to_str().unwrap_or(""))
                             .unwrap_or("")
                             .to_string(),
                         status: timeline.status,
@@ -179,7 +191,7 @@ pub fn get_diagnose_history(
                         medium_priority: timeline.summary.by_severity.medium,
                         low_priority: timeline.summary.by_severity.low,
                         report_path,
-                        timeline_path: entry.path().to_string_lossy().to_string(),
+                        timeline_path: entry.path().to_str().unwrap_or("").to_string(),
                         fixed_doc_path,
                         duration_seconds: Some(timeline.duration_seconds),
                     });

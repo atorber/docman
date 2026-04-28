@@ -24,6 +24,7 @@ const Home: React.FC = () => {
   // 工作目录状态
   const [workDir, setWorkDir] = useState<string | null>(null);
   const [showWorkDirModal, setShowWorkDirModal] = useState(false);
+  const [selectingDir, setSelectingDir] = useState(false);
 
   // 文档内容
   const [docContent, setDocContent] = useState('');
@@ -48,28 +49,45 @@ const Home: React.FC = () => {
   }, []);
 
   const checkWorkDirectory = async () => {
-    const dir = await getWorkDirectory();
-    if (dir) {
-      setWorkDir(dir);
-      loadDocTree();
-    } else {
+    try {
+      const dir = await getWorkDirectory();
+      console.log('Loaded work directory:', dir);
+      if (dir) {
+        setWorkDir(dir);
+        loadDocTree();
+      } else {
+        setShowWorkDirModal(true);
+      }
+    } catch (e) {
+      console.error('Failed to check work directory:', e);
       setShowWorkDirModal(true);
     }
   };
 
   const handleSelectWorkDir = async () => {
-    const selected = await open({
-      directory: true,
-      multiple: false,
-      title: '选择工作目录',
-    });
-    
-    if (selected && typeof selected === 'string') {
-      await setWorkDirectory(selected);
-      setWorkDir(selected);
-      setShowWorkDirModal(false);
-      loadDocTree();
-      message.success('工作目录已设置');
+    setSelectingDir(true);
+    try {
+      const selected = await open({
+        directory: true,
+        multiple: false,
+        title: '选择工作目录（项目根目录）',
+      });
+      
+      console.log('Selected directory:', selected);
+      
+      if (selected && typeof selected === 'string') {
+        await setWorkDirectory(selected);
+        setWorkDir(selected);
+        setShowWorkDirModal(false);
+        message.success('工作目录已设置: ' + selected);
+        // 重新加载文档树
+        setTimeout(() => loadDocTree(), 100);
+      }
+    } catch (e) {
+      console.error('Failed to select work directory:', e);
+      message.error('选择目录失败');
+    } finally {
+      setSelectingDir(false);
     }
   };
 
@@ -99,10 +117,12 @@ const Home: React.FC = () => {
     setLoadingTree(true);
     try {
       const data = await getDocTree();
+      console.log('Loaded doc tree:', data);
       setDocTree(data);
       return data;
     } catch (e) {
       console.error('Failed to load doc tree:', e);
+      message.error('加载文档树失败: ' + e);
       return [];
     } finally {
       setLoadingTree(false);
@@ -590,20 +610,24 @@ const Home: React.FC = () => {
       <Modal
         title="选择工作目录"
         open={showWorkDirModal}
-        onOk={handleSelectWorkDir}
         onCancel={() => workDir && setShowWorkDirModal(false)}
-        okText="选择目录"
-        cancelText="取消"
+        footer={null}
+        width={600}
       >
-        <p>请选择包含 raw、timeline、report 等目录的工作目录。</p>
-        <p>工作目录应包含以下结构：</p>
-        <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4 }}>
-          {`工作目录/
+        <div style={{ padding: '16px 0' }}>
+          <p>请选择项目根目录作为工作目录（包含 raw、timeline、report 等子目录）。</p>
+          <p>当前工作目录：<strong>{workDir || '未设置'}</strong></p>
+          <pre style={{ background: '#f5f5f5', padding: 12, borderRadius: 4, marginBottom: 16 }}>
+{`工作目录/
 ├── raw/        # 原始文档
 ├── timeline/   # 诊断过程记录
 ├── report/     # 诊断报告
 └── new/        # 修复后文档`}
-        </pre>
+          </pre>
+          <Button type="primary" icon={<FolderOpenOutlined />} onClick={handleSelectWorkDir} loading={selectingDir} block>
+            选择工作目录
+          </Button>
+        </div>
       </Modal>
 
       {/* Diff 全屏模式 */}
@@ -695,7 +719,7 @@ const Home: React.FC = () => {
                   {
                     title: '操作',
                     key: 'action',
-                    render: (_, record) => <Button type="link" onClick={() => handleNavToDoc(record)}>查看详情</Button>,
+                    render: (_: unknown, record: DocNode) => <Button type="link" onClick={() => handleNavToDoc(record)}>查看详情</Button>,
                   },
                 ]}
                 rowKey="relativePath"

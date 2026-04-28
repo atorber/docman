@@ -35,16 +35,5 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
-  },
-  "plugins": {
-    "dialog": {
-      "all": true,
-      "open": true,
-      "save": true
-    },
-    "notification": {
-      "all": true
-    },
-    "store": {}
   }
 }

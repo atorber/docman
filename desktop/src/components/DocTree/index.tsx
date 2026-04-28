@@ -120,12 +120,14 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
     return result;
   };
 
-  const handleExpand = (keys: string[]) => { setExpandedKeys(keys); };
-  const handleSelect = (keys: string[], info: { node: any }) => {
+  const handleExpand = (keys: React.Key[]) => { setExpandedKeys(keys.map(String)); };
+  const handleSelect = (keys: React.Key[], info: { node: any }) => {
     const node = info.node;
     if (node.isLeaf) {
-      setSelectedKeys(keys);
-      onSelectDoc({ name: node.key.split('/').pop() || node.key, path: node.key, relativePath: node.key, type: 'file' });
+      const selected = keys.map(String);
+      const nodeKey = String(node.key);
+      setSelectedKeys(selected);
+      onSelectDoc({ name: nodeKey.split('/').pop() || nodeKey, path: nodeKey, relativePath: nodeKey, type: 'file' });
     }
   };
 

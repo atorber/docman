@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Space, Input, Select, Spin, message, Checkbox } from 'antd';
+import { Button, Space, Input, message, Checkbox } from 'antd';
 import { PlayCircleOutlined, CopyOutlined } from '@ant-design/icons';
 import { getDimensions, generatePrompt } from '../../services/api';
 import { DiagnoseDimension } from '../../types';
@@ -11,7 +11,7 @@ interface PromptPanelProps {
 
 const { TextArea } = Input;
 
-const PromptPanel: React.FC<PromptPanelProps> = ({ documentPath, documentName }) => {
+const PromptPanel: React.FC<PromptPanelProps> = ({ documentPath }) => {
   const [loading, setLoading] = useState(false);
   const [dimensions, setDimensions] = useState<DiagnoseDimension[]>([]);
   const [selectedDimensions, setSelectedDimensions] = useState<number[]>([]);
