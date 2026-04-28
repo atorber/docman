@@ -62,8 +62,15 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ documentPath }) => {
   const handleCopy = () => {
     if (generatedPrompt) {
       navigator.clipboard.writeText(generatedPrompt);
-      message.success('已复制');
+      message.success('Prompt已复制');
     }
+  };
+
+  const handleCopyClaudeCommand = () => {
+    if (!generatedPrompt) return;
+    const command = `claude -p "$(cat <<'DOCMAN_PROMPT_EOF'\n${generatedPrompt}\nDOCMAN_PROMPT_EOF\n)"`;
+    navigator.clipboard.writeText(command);
+    message.success('Claude命令已复制');
   };
 
   const handleSelectAll = (checked: boolean) => {
@@ -166,9 +173,14 @@ const PromptPanel: React.FC<PromptPanelProps> = ({ documentPath }) => {
           <div>
             <div style={{ marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontWeight: 500 }}>生成的Prompt</span>
-              <Button type="link" icon={<CopyOutlined />} onClick={handleCopy}>
-                复制
-              </Button>
+              <Space size={0}>
+                <Button type="link" icon={<CopyOutlined />} onClick={handleCopy}>
+                  复制Prompt
+                </Button>
+                <Button type="link" onClick={handleCopyClaudeCommand}>
+                  复制Claude命令
+                </Button>
+              </Space>
             </div>
             <TextArea
               rows={15}

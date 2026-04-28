@@ -157,8 +157,15 @@ const PrdGeneratorPanel: React.FC = () => {
   const handleCopy = () => {
     if (generatedPrompt) {
       navigator.clipboard.writeText(generatedPrompt);
-      message.success('已复制到剪贴板');
+      message.success('Prompt已复制到剪贴板');
     }
+  };
+
+  const handleCopyClaudeCommand = () => {
+    if (!generatedPrompt) return;
+    const command = `claude -p "$(cat <<'DOCMAN_PROMPT_EOF'\n${generatedPrompt}\nDOCMAN_PROMPT_EOF\n)"`;
+    navigator.clipboard.writeText(command);
+    message.success('Claude命令已复制到剪贴板');
   };
 
   const handleAddCompetitiveLink = () => {
@@ -415,9 +422,14 @@ const PrdGeneratorPanel: React.FC = () => {
             title="生成的Prompt"
             size="small"
             extra={
-              <Button type="link" icon={<CopyOutlined />} onClick={handleCopy}>
-                复制
-              </Button>
+              <Space size={0}>
+                <Button type="link" icon={<CopyOutlined />} onClick={handleCopy}>
+                  复制Prompt
+                </Button>
+                <Button type="link" onClick={handleCopyClaudeCommand}>
+                  复制Claude命令
+                </Button>
+              </Space>
             }
           >
             <TextArea

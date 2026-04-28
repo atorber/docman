@@ -94,8 +94,16 @@ const PrdPromptPanel: React.FC<PrdPromptPanelProps> = ({ documentPath }) => {
   };
 
   const handleCopy = () => {
+    if (!prompt) return;
     navigator.clipboard.writeText(prompt);
-    message.success('已复制到剪贴板');
+    message.success('Prompt已复制到剪贴板');
+  };
+
+  const handleCopyClaudeCommand = () => {
+    if (!prompt) return;
+    const command = `claude -p "$(cat <<'DOCMAN_PROMPT_EOF'\n${prompt}\nDOCMAN_PROMPT_EOF\n)"`;
+    navigator.clipboard.writeText(command);
+    message.success('Claude命令已复制到剪贴板');
   };
 
   const getPriorityColor = (priority: string) => {
@@ -203,9 +211,14 @@ const PrdPromptPanel: React.FC<PrdPromptPanelProps> = ({ documentPath }) => {
           title="生成的 Prompt"
           size="small"
           extra={
-            <Button type="link" icon={<CopyOutlined />} onClick={handleCopy}>
-              复制
-            </Button>
+            <Space size={0}>
+              <Button type="link" icon={<CopyOutlined />} onClick={handleCopy}>
+                复制Prompt
+              </Button>
+              <Button type="link" onClick={handleCopyClaudeCommand}>
+                复制Claude命令
+              </Button>
+            </Space>
           }
         >
           <pre style={{
