@@ -1,1 +1,0 @@
-CUDA镜像基于nvidia/cuda 系列镜像构建，内含Miniforge Python、开发工具、apt&pip百度源、RDMA基础库及CUDA运行时环境，适合通用的高性能计算场景。

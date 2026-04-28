@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DocMan 产品官网文档</title>
+    <meta name="description" content="DocMan 产品官网与文档站点" />
+    <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css" />
+    <style>
+      .app-name-link img {
+        max-width: 120px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app">文档加载中...</div>
+    <script>
+      window.$docsify = {
+        name: "DocMan",
+        repo: "",
+        loadSidebar: true,
+        subMaxLevel: 2,
+        auto2top: true,
+        homepage: "content/产品官网文档/官网首页文案.md",
+        search: {
+          placeholder: "搜索文档",
+          noData: "未找到结果",
+          depth: 3
+        }
+      };
+    </script>
+    <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+    <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  </body>
+</html>

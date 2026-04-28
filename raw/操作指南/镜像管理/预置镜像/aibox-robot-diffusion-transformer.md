@@ -1,1 +1,0 @@
-robot-diffusion-transformer镜像基于nvidia/cuda构建，集成RDT机器人学习通用框架，内含Miniforge Python、常用命令行工具等，主要面向具身智能开发和训推场景。

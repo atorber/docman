@@ -192,6 +192,18 @@ cd web
 npm run dev
 ```
 
+### 一键启动（推荐）
+
+在项目根目录执行：
+
+```bash
+# 一键启动前后端
+npm run dev
+
+# 一键启动（后端调试模式，默认 inspect 9229）
+npm run dev:debug
+```
+
 ### 使用部署启动 Skill（推荐）
 
 首次在本地部署时，建议在项目根目录通过本地 Agent 调用 `docman-bootstrap`：

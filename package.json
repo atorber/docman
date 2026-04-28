@@ -1,0 +1,10 @@
+{
+  "name": "docman-workspace",
+  "private": true,
+  "scripts": {
+    "dev": "sh -c 'npm --prefix backend run dev & npm --prefix web run dev & wait'",
+    "dev:debug": "sh -c 'npm --prefix backend run dev:debug & npm --prefix web run dev & wait'",
+    "dev:backend": "npm --prefix backend run dev",
+    "dev:web": "npm --prefix web run dev"
+  }
+}
