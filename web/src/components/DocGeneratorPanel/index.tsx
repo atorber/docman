@@ -1,20 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Space, Input, Select, message, Checkbox, Card, Divider, Alert } from 'antd';
 import { PlayCircleOutlined, CopyOutlined, FileTextOutlined, GlobalOutlined, AppstoreOutlined, FolderOpenOutlined } from '@ant-design/icons';
-import { getDocTypes, getTargetAudiences, generateDocPrompt, getDocTree } from '../../services/api';
-import { DocNode, DocTypeOption, TargetAudienceOption } from '../../types';
+import { getDocTypes, getTargetAudiences, generateDocPrompt, getDocTree, getPrdDocTree } from '../../services/api';
+import { DocNode, DocTypeOption, PrdDocNode, TargetAudienceOption } from '../../types';
 
 const { TextArea } = Input;
 
 const DocGeneratorPanel: React.FC = () => {
+  const [messageApi, contextHolder] = message.useMessage();
   const [loading, setLoading] = useState(false);
   const [docTypes, setDocTypes] = useState<DocTypeOption[]>([]);
   const [targetAudiences, setTargetAudiences] = useState<TargetAudienceOption[]>([]);
   const [rawParentDirs, setRawParentDirs] = useState<string[]>([]);
+  const [prdFilePaths, setPrdFilePaths] = useState<string[]>([]);
 
   // 表单状态
   const [parentDir, setParentDir] = useState<string>('');
   const [docName, setDocName] = useState<string>('');
+  const [prdPath, setPrdPath] = useState('');
   const [consoleUrl, setConsoleUrl] = useState('');
   const [docType, setDocType] = useState<string>('操作指南');
   const [targetAudience, setTargetAudience] = useState<string>('普通用户');
@@ -32,14 +35,16 @@ const DocGeneratorPanel: React.FC = () => {
 
   const loadOptions = async () => {
     try {
-      const [types, audiences, tree] = await Promise.all([
+      const [types, audiences, tree, prdTree] = await Promise.all([
         getDocTypes(),
         getTargetAudiences(),
         getDocTree(),
+        getPrdDocTree(),
       ]);
       setDocTypes(types);
       setTargetAudiences(audiences);
       setRawParentDirs(extractRawParentDirs(tree));
+      setPrdFilePaths(extractPrdFilePaths(prdTree));
     } catch (e) {
       console.error('Failed to load options:', e);
     }
@@ -63,13 +68,30 @@ const DocGeneratorPanel: React.FC = () => {
     return Array.from(dirs).sort((a, b) => a.localeCompare(b));
   };
 
+  const extractPrdFilePaths = (nodes: PrdDocNode[]): string[] => {
+    const paths: string[] = [];
+
+    const walk = (items: PrdDocNode[]) => {
+      for (const node of items) {
+        if (node.type === 'file') {
+          paths.push(node.relativePath);
+        } else if (node.children && node.children.length > 0) {
+          walk(node.children);
+        }
+      }
+    };
+
+    walk(nodes);
+    return paths.sort((a, b) => a.localeCompare(b));
+  };
+
   const getNormalizedDocName = (value: string): string => {
     const trimmed = value.trim();
     if (!trimmed) return '';
     return trimmed.endsWith('.md') ? trimmed : `${trimmed}.md`;
   };
 
-  const getPrdPath = (): string => {
+  const getOutputPath = (): string => {
     const normalizedName = getNormalizedDocName(docName);
     if (!normalizedName) return '';
     if (!parentDir) return normalizedName;
@@ -78,27 +100,32 @@ const DocGeneratorPanel: React.FC = () => {
 
   const handleGenerate = async () => {
     if (!parentDir) {
-      message.warning('请先选择文档父目录');
+      messageApi.warning('请先选择文档父目录');
       return;
     }
     if (!docName.trim()) {
-      message.warning('请输入文档名称');
+      messageApi.warning('请输入文档名称');
       return;
     }
 
-    const prdPath = getPrdPath();
+    const outputPath = getOutputPath();
+    if (!outputPath) {
+      messageApi.warning('请先配置生成文档路径');
+      return;
+    }
     if (!prdPath) {
-      message.warning('请输入PRD文档路径');
+      messageApi.warning('请输入PRD文档路径');
       return;
     }
     if (!consoleUrl) {
-      message.warning('请输入控制台URL');
+      messageApi.warning('请输入控制台URL');
       return;
     }
     setLoading(true);
     try {
       const result = await generateDocPrompt({
         prdPath,
+        outputPath,
         consoleUrl,
         docType: docType as '快速入门' | '操作指南' | '功能说明',
         targetAudience: targetAudience as '开发者' | '运维人员' | '普通用户',
@@ -107,9 +134,9 @@ const DocGeneratorPanel: React.FC = () => {
         showBrowserUI,
       });
       setGeneratedPrompt(result.prompt);
-      message.success('Prompt生成成功');
+      messageApi.success('Prompt生成成功');
     } catch (e) {
-      message.error('生成失败');
+      messageApi.error('生成失败');
     } finally {
       setLoading(false);
     }
@@ -118,12 +145,13 @@ const DocGeneratorPanel: React.FC = () => {
   const handleCopy = () => {
     if (generatedPrompt) {
       navigator.clipboard.writeText(generatedPrompt);
-      message.success('已复制到剪贴板');
+      messageApi.success('已复制到剪贴板');
     }
   };
 
   return (
     <div style={{ padding: 16, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}>
+      {contextHolder}
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         {/* 说明 */}
         <Alert
@@ -134,11 +162,28 @@ const DocGeneratorPanel: React.FC = () => {
         />
 
         {/* 基础信息 */}
-        <Card title={<span><FolderOpenOutlined /> 步骤1：选择文档位置</span>} size="small">
+        <Card title={<span><FolderOpenOutlined />配置生成文档存放位置</span>} size="small">
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
             <div>
-              <div style={{ marginBottom: 8, fontWeight: 500 }}>
-                文档父目录（raw 下） <span style={{ color: '#ff4d4f' }}>*</span>
+              <div style={{ marginBottom: 8, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>
+                  文档父目录（raw 下） <span style={{ color: '#ff4d4f' }}>*</span>
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontWeight: 400,
+                    color: getOutputPath() ? '#8c8c8c' : '#bfbfbf',
+                    fontSize: 12,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={getOutputPath() || '选择父目录并输入文档名后自动生成'}
+                >
+                  {getOutputPath() || '选择父目录并输入文档名后自动生成'}
+                </span>
               </div>
               <Select
                 placeholder="请选择 raw 下的父目录"
@@ -163,20 +208,30 @@ const DocGeneratorPanel: React.FC = () => {
               />
             </div>
 
-            <div>
-              <div style={{ marginBottom: 8, fontWeight: 500 }}>PRD文档路径（自动拼接）</div>
-              <Input
-                value={getPrdPath()}
-                readOnly
-                prefix={<FolderOpenOutlined />}
-                placeholder="选择父目录并输入文档名后自动生成"
-              />
-            </div>
           </Space>
         </Card>
 
         <Card title={<span><FileTextOutlined /> 基础信息</span>} size="small">
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <div>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                PRD文档路径（输入） <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+              <Select
+                placeholder="请选择工作目录内的 PRD 文档"
+                value={prdPath || undefined}
+                onChange={setPrdPath}
+                style={{ width: '100%' }}
+                showSearch
+                optionFilterProp="label"
+                options={prdFilePaths.map((path) => ({ value: path, label: path }))}
+                suffixIcon={<FileTextOutlined />}
+              />
+              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                仅支持选择当前工作目录中的 PRD 文件路径。
+              </div>
+            </div>
+
             {/* 控制台URL */}
             <div>
               <div style={{ marginBottom: 8, fontWeight: 500 }}>

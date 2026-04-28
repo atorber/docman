@@ -6,7 +6,7 @@ import { PrdDocNode, PrdReviewRecord, PrdTimelineData } from '../types';
 
 const router = Router();
 
-const BASE_DIR = path.join(__dirname, '../../../..');
+const BASE_DIR = path.join(__dirname, '../../..');
 
 // 获取prd目录的根路径
 const getPrdPath = (): string => {
@@ -23,6 +23,10 @@ const buildPrdDocTree = (relativePath: string = ''): PrdDocNode[] => {
   const fullPath = path.join(prdPath, relativePath);
 
   if (!fs.existsSync(prdPath)) {
+    return [];
+  }
+
+  if (!fs.existsSync(fullPath)) {
     return [];
   }
 

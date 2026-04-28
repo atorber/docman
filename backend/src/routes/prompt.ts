@@ -84,12 +84,20 @@ router.post('/generate-prd', (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: '缺少需求类型' });
     }
 
+    if (!request.productName) {
+      return res.status(400).json({ success: false, error: '缺少产品名称' });
+    }
+
     if (!request.title) {
       return res.status(400).json({ success: false, error: '缺少需求标题' });
     }
 
     if (!request.description) {
       return res.status(400).json({ success: false, error: '缺少需求描述' });
+    }
+
+    if (!request.outputPath) {
+      return res.status(400).json({ success: false, error: '缺少输出路径' });
     }
 
     const result = generatePrdGenPrompt(request);

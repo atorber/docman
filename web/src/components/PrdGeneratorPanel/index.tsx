@@ -1,28 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Space, Input, Select, message, Card, Divider, Alert } from 'antd';
-import { PlayCircleOutlined, CopyOutlined, FileTextOutlined, AppstoreOutlined, PlusOutlined, LinkOutlined, UserOutlined, TagsOutlined } from '@ant-design/icons';
-import { getRequirementTypes, generatePrdGenPrompt } from '../../services/api';
-import { RequirementTypeOption } from '../../types';
+import { PlayCircleOutlined, CopyOutlined, FileTextOutlined, AppstoreOutlined, PlusOutlined, LinkOutlined, UserOutlined, TagsOutlined, FolderOpenOutlined } from '@ant-design/icons';
+import { getRequirementTypes, generatePrdGenPrompt, getPrdDocTree } from '../../services/api';
+import { PrdDocNode, RequirementTypeOption } from '../../types';
 
 const { TextArea } = Input;
+const PRD_ROOT_DIR = 'prd';
 
 const PrdGeneratorPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [requirementTypes, setRequirementTypes] = useState<RequirementTypeOption[]>([]);
+  const [prdParentDirs, setPrdParentDirs] = useState<string[]>([]);
+  const [prdFilePaths, setPrdFilePaths] = useState<string[]>([]);
 
   // 表单状态
+  const [parentDir, setParentDir] = useState<string>('');
+  const [docName, setDocName] = useState<string>('');
   const [type, setType] = useState<string>('新功能');
   const [productName, setProductName] = useState('');
   const [title, setTitle] = useState('');
   const [initialPrdPath, setInitialPrdPath] = useState('');
   const [description, setDescription] = useState('');
   const [userPersona, setUserPersona] = useState('');
-  const [competitiveLinks, setCompetitiveLinks] = useState<string[]>(['']);
-  const [referenceDocs, setReferenceDocs] = useState<string[]>(['']);
-  const [outputPath, setOutputPath] = useState('');
+  const [competitiveLinks, setCompetitiveLinks] = useState<string[]>([]);
+  const [referenceDocs, setReferenceDocs] = useState<string[]>([]);
 
   // 高级选项展开状态
-  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(true);
 
   // 生成的Prompt
   const [generatedPrompt, setGeneratedPrompt] = useState('');
@@ -34,14 +38,87 @@ const PrdGeneratorPanel: React.FC = () => {
 
   const loadOptions = async () => {
     try {
-      const types = await getRequirementTypes();
+      const [types, prdTree] = await Promise.all([
+        getRequirementTypes(),
+        getPrdDocTree(),
+      ]);
       setRequirementTypes(types);
+      setPrdParentDirs(extractPrdParentDirs(prdTree));
+      setPrdFilePaths(extractPrdFilePaths(prdTree));
     } catch (e) {
       console.error('Failed to load options:', e);
     }
   };
 
+  const extractPrdParentDirs = (nodes: PrdDocNode[]): string[] => {
+    const dirs = new Set<string>();
+
+    const walk = (items: PrdDocNode[]) => {
+      for (const node of items) {
+        if (node.type === 'directory') {
+          dirs.add(node.relativePath);
+          if (node.children && node.children.length > 0) {
+            walk(node.children);
+          }
+        }
+      }
+    };
+
+    walk(nodes);
+    const allDirs = [PRD_ROOT_DIR, ...Array.from(dirs).map((dir) => `${PRD_ROOT_DIR}/${dir}`)];
+    return allDirs.sort((a, b) => a.localeCompare(b));
+  };
+
+  const extractPrdFilePaths = (nodes: PrdDocNode[]): string[] => {
+    const paths: string[] = [];
+
+    const walk = (items: PrdDocNode[]) => {
+      for (const node of items) {
+        if (node.type === 'file') {
+          paths.push(`${PRD_ROOT_DIR}/${node.relativePath}`);
+        } else if (node.children && node.children.length > 0) {
+          walk(node.children);
+        }
+      }
+    };
+
+    walk(nodes);
+    return paths.sort((a, b) => a.localeCompare(b));
+  };
+
+  const getNormalizedDocName = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    return trimmed.endsWith('.md') ? trimmed : `${trimmed}.md`;
+  };
+
+  const getNormalizedInitialPrdPath = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    const withPrefix = trimmed.startsWith('prd/') ? trimmed : `prd/${trimmed.replace(/^\/+/, '')}`;
+    return withPrefix.endsWith('.md') ? withPrefix : `${withPrefix}.md`;
+  };
+
+  const getOutputPath = (): string => {
+    const normalizedName = getNormalizedDocName(docName);
+    if (!normalizedName) return '';
+    return parentDir ? `${parentDir}/${normalizedName}` : normalizedName;
+  };
+
   const handleGenerate = async () => {
+    if (!parentDir) {
+      message.warning('请先选择文档父目录');
+      return;
+    }
+    if (!docName.trim()) {
+      message.warning('请输入文档名称');
+      return;
+    }
+    const outputPath = getOutputPath();
+    if (!outputPath) {
+      message.warning('请先配置生成文档路径');
+      return;
+    }
     if (!productName) {
       message.warning('请输入产品名称');
       return;
@@ -62,11 +139,11 @@ const PrdGeneratorPanel: React.FC = () => {
         productName,
         title,
         description,
-        initialPrdPath: initialPrdPath || undefined,
+        initialPrdPath: getNormalizedInitialPrdPath(initialPrdPath) || undefined,
         userPersona: userPersona || undefined,
         competitiveLinks: competitiveLinks.filter(l => l.trim()) || undefined,
         referenceDocs: referenceDocs.filter(d => d.trim()) || undefined,
-        outputPath: outputPath || undefined,
+        outputPath,
       });
       setGeneratedPrompt(result.prompt);
       message.success('Prompt生成成功');
@@ -92,16 +169,8 @@ const PrdGeneratorPanel: React.FC = () => {
     setCompetitiveLinks(competitiveLinks.filter((_, i) => i !== index));
   };
 
-  const handleAddReferenceDoc = () => {
-    setReferenceDocs([...referenceDocs, '']);
-  };
-
-  const handleRemoveReferenceDoc = (index: number) => {
-    setReferenceDocs(referenceDocs.filter((_, i) => i !== index));
-  };
-
   return (
-    <div style={{ padding: 24, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}>
+    <div style={{ padding: 16, maxHeight: 'calc(100vh - 200px)', overflow: 'auto' }}>
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         {/* 说明 */}
         <Alert
@@ -110,6 +179,55 @@ const PrdGeneratorPanel: React.FC = () => {
           type="info"
           showIcon
         />
+
+        <Card title={<span><FolderOpenOutlined /> 配置生成文档存放位置</span>} size="small">
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
+            <div>
+              <div style={{ marginBottom: 8, fontWeight: 500, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>
+                  文档父目录（prd 下） <span style={{ color: '#ff4d4f' }}>*</span>
+                </span>
+                <span
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    fontWeight: 400,
+                    color: getOutputPath() ? '#8c8c8c' : '#bfbfbf',
+                    fontSize: 12,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                  }}
+                  title={getOutputPath() || '选择父目录并输入文档名后自动生成'}
+                >
+                  {getOutputPath() || '选择父目录并输入文档名后自动生成'}
+                </span>
+              </div>
+              <Select
+                placeholder="请选择 prd 下的父目录"
+                value={parentDir || undefined}
+                onChange={setParentDir}
+                style={{ width: '100%' }}
+                showSearch
+                optionFilterProp="label"
+                options={prdParentDirs.map((dir) => ({ value: dir, label: dir }))}
+              />
+            </div>
+
+            <div>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                文档名称 <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+              <Input
+                placeholder="如: AIHC_资源组管理PRD（可不写 .md）"
+                value={docName}
+                onChange={(e) => setDocName(e.target.value)}
+                prefix={<FileTextOutlined />}
+              />
+            </div>
+
+          </Space>
+        </Card>
 
         {/* 基础信息 */}
         <Card title={<span><FileTextOutlined /> 基础信息</span>} size="small">
@@ -123,6 +241,7 @@ const PrdGeneratorPanel: React.FC = () => {
                 value={type}
                 onChange={setType}
                 style={{ width: '100%' }}
+                optionLabelProp="value"
                 options={requirementTypes.map(t => ({
                   value: t.value,
                   label: (
@@ -215,7 +334,7 @@ const PrdGeneratorPanel: React.FC = () => {
 
               {/* 竞品链接 */}
               <div>
-                <div style={{ marginBottom: 8, fontWeight: 500 }}>竞品链接</div>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>竞品链接（URL，可多条）</div>
                 <Space direction="vertical" style={{ width: '100%' }} size="small">
                   {competitiveLinks.map((link, index) => (
                     <Input
@@ -229,7 +348,7 @@ const PrdGeneratorPanel: React.FC = () => {
                       }}
                       prefix={<LinkOutlined />}
                       suffix={
-                        competitiveLinks.length > 1 && (
+                        competitiveLinks.length > 0 && (
                           <Button
                             type="text"
                             danger
@@ -254,56 +373,24 @@ const PrdGeneratorPanel: React.FC = () => {
                 </Space>
               </div>
 
-              {/* 参考文档 */}
+              {/* 本地参考文档 */}
               <div>
-                <div style={{ marginBottom: 8, fontWeight: 500 }}>参考文档</div>
-                <Space direction="vertical" style={{ width: '100%' }} size="small">
-                  {referenceDocs.map((doc, index) => (
-                    <Input
-                      key={index}
-                      placeholder="参考文档路径或URL"
-                      value={doc}
-                      onChange={e => {
-                        const newDocs = [...referenceDocs];
-                        newDocs[index] = e.target.value;
-                        setReferenceDocs(newDocs);
-                      }}
-                      prefix={<FileTextOutlined />}
-                      suffix={
-                        referenceDocs.length > 1 && (
-                          <Button
-                            type="text"
-                            danger
-                            size="small"
-                            onClick={() => handleRemoveReferenceDoc(index)}
-                          >
-                            删除
-                          </Button>
-                        )
-                      }
-                    />
-                  ))}
-                  <Button
-                    type="dashed"
-                    icon={<PlusOutlined />}
-                    onClick={handleAddReferenceDoc}
-                    style={{ width: '100%' }}
-                  >
-                    添加参考文档
-                  </Button>
-                </Space>
+                <div style={{ marginBottom: 8, fontWeight: 500 }}>本地参考文档（prd 下，可多选）</div>
+                <Select
+                  mode="multiple"
+                  value={referenceDocs}
+                  onChange={setReferenceDocs}
+                  style={{ width: '100%' }}
+                  showSearch
+                  optionFilterProp="label"
+                  maxTagCount={3}
+                  options={prdFilePaths.map((p) => ({ value: p, label: p }))}
+                />
+                <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                  选择用于增强生成内容的本地参考文档（只允许 prd 下的 .md 文件）。
+                </div>
               </div>
 
-              {/* 输出路径 */}
-              <div>
-                <div style={{ marginBottom: 8, fontWeight: 500 }}>输出路径</div>
-                <Input
-                  placeholder="默认: prd/{需求标题}_PRD_{时间戳}.md"
-                  value={outputPath}
-                  onChange={e => setOutputPath(e.target.value)}
-                  prefix={<FileTextOutlined />}
-                />
-              </div>
             </Space>
           )}
         </Card>

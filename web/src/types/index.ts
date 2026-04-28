@@ -240,6 +240,7 @@ export interface GeneratePrdPromptRequest {
 // 帮助文档生成Prompt请求
 export interface GenerateDocPromptRequest {
   prdPath: string;
+  outputPath?: string;
   consoleUrl: string;
   productName?: string;
   docType?: '快速入门' | '操作指南' | '功能说明';
@@ -253,6 +254,7 @@ export interface GenerateDocPromptRequest {
 export interface GenerateDocPromptResponse {
   prompt: string;
   prdPath: string;
+  outputPath?: string;
   prdName: string;
   productName?: string;
   timestamp: string;
@@ -284,7 +286,7 @@ export interface GeneratePrdGenPromptRequest {
   userPersona?: string;
   competitiveLinks?: string[];
   referenceDocs?: string[];
-  outputPath?: string;
+  outputPath: string;
 }
 
 // PRD生成Prompt响应

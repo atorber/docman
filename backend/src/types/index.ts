@@ -218,6 +218,7 @@ export interface PrdDimension {
 // 帮助文档生成请求
 export interface GenerateDocPromptRequest {
   prdPath: string;                  // PRD文档路径
+  outputPath?: string;              // 生成文档输出路径（raw 相对路径）
   consoleUrl: string;               // 控制台URL
   productName?: string;              // 产品名称
   docType?: '快速入门' | '操作指南' | '功能说明';  // 文档类型
@@ -231,6 +232,7 @@ export interface GenerateDocPromptRequest {
 export interface GenerateDocPromptResponse {
   prompt: string;
   prdPath: string;
+  outputPath?: string;
   prdName: string;
   productName?: string;
   timestamp: string;
@@ -314,7 +316,7 @@ export interface GeneratePrdGenPromptRequest {
   userPersona?: string;                             // 用户画像（可选）
   competitiveLinks?: string[];                       // 竞品链接（可选）
   referenceDocs?: string[];                          // 参考文档（可选）
-  outputPath?: string;                              // 输出路径（可选）
+  outputPath: string;                               // 输出路径（必填）
 }
 
 // PRD生成响应

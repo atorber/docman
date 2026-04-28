@@ -82,6 +82,7 @@ export const getDimensions = () => [
 export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDocPromptResponse => {
   const { 
     prdPath, 
+    outputPath,
     consoleUrl, 
     productName = '', 
     docType = '操作指南', 
@@ -99,7 +100,7 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   let prompt = `请使用当前工作目录的「doc-generator」skill执行以下帮助文档生成任务。\n\n`;
   prompt += `# 帮助文档生成\n\n`;
   prompt += `## 输入信息\n`;
-  prompt += `- PRD文档路径: ${prdPath}\n`;
+  prompt += `- PRD文档路径（输入）: ${prdPath}\n`;
   prompt += `- 控制台URL: ${consoleUrl}\n`;
   if (productName) {
     prompt += `- 产品名称: ${productName}\n`;
@@ -107,6 +108,9 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   prompt += `- 文档类型: ${docType}\n`;
   prompt += `- 目标受众: ${targetAudience}\n`;
   prompt += `- 输出格式: ${outputFormat}\n`;
+  if (outputPath) {
+    prompt += `- 生成文档路径（输出）: raw/${outputPath}\n`;
+  }
 
   // 添加浏览器配置
   if (useLoggedInBrowser) {
@@ -126,6 +130,7 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   return {
     prompt,
     prdPath,
+    outputPath,
     prdName,
     productName,
     timestamp,
@@ -152,12 +157,36 @@ export const generatePrdGenPrompt = (request: GeneratePrdGenPromptRequest): Gene
     outputPath
   } = request;
 
+  const isSafePrdFilePath = (p?: string): boolean => {
+    if (!p) return false;
+    if (typeof p !== 'string') return false;
+    const trimmed = p.trim();
+    if (!trimmed.startsWith('prd/')) return false;
+    if (trimmed.includes('..')) return false;
+    if (trimmed.startsWith('/') || trimmed.includes('\\') || trimmed.includes(':')) return false;
+    // 约定使用 md 文件
+    return trimmed.endsWith('.md');
+  };
+
   const now = new Date();
   const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
-  // 默认输出路径
-  const defaultOutputPath = `prd/${title}_PRD_${timestamp}.md`;
-  const finalOutputPath = outputPath || defaultOutputPath;
+  if (!isSafePrdFilePath(outputPath)) {
+    throw new Error('非法输出路径：必须为 prd 下的 .md 文件路径');
+  }
+
+  const finalOutputPath = outputPath.trim();
+
+  const safeInitialPrdPath =
+    typeof initialPrdPath === 'string' && isSafePrdFilePath(initialPrdPath)
+      ? initialPrdPath.trim()
+      : undefined;
+  const safeReferenceDocs = Array.isArray(referenceDocs)
+    ? referenceDocs
+        .filter((d): d is string => typeof d === 'string')
+        .map((d) => d.trim())
+        .filter((d) => isSafePrdFilePath(d))
+    : [];
 
   // 构建调用skill的指令
   let prompt = `请使用当前工作目录的「prd-generator」skill执行以下PRD生成任务。\n\n`;
@@ -170,8 +199,8 @@ export const generatePrdGenPrompt = (request: GeneratePrdGenPromptRequest): Gene
   prompt += `- 需求标题: ${title}\n`;
   prompt += `- 需求描述: ${description}\n`;
 
-  if (initialPrdPath) {
-    prompt += `- 初始PRD路径: ${initialPrdPath}\n`;
+  if (safeInitialPrdPath) {
+    prompt += `- 初始PRD路径: ${safeInitialPrdPath}\n`;
   }
 
   if (userPersona) {
@@ -185,9 +214,9 @@ export const generatePrdGenPrompt = (request: GeneratePrdGenPromptRequest): Gene
     });
   }
 
-  if (referenceDocs && referenceDocs.length > 0) {
+  if (safeReferenceDocs && safeReferenceDocs.length > 0) {
     prompt += `- 参考文档:\n`;
-    referenceDocs.forEach(doc => {
+    safeReferenceDocs.forEach(doc => {
       prompt += `  - ${doc}\n`;
     });
   }
