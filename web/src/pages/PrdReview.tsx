@@ -386,7 +386,7 @@ const PrdReview: React.FC = () => {
     },
     {
       key: 'prompt',
-      label: <span><FileAddOutlined /> 生成评审</span>,
+      label: <span><FileAddOutlined /> 生成评审Prompt</span>,
       children: (
         <PrdPromptPanel
           documentPath={selectedDoc?.relativePath || ''}

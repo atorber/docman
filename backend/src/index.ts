@@ -4,6 +4,7 @@ import documentRoutes from './routes/document';
 import diagnoseRoutes from './routes/diagnose';
 import promptRoutes from './routes/prompt';
 import prdReviewRoutes from './routes/prdReview';
+import recordsRoutes from './routes/records';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,6 +18,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/diagnoses', diagnoseRoutes);
 app.use('/api/prompt', promptRoutes);
 app.use('/api/prd-review', prdReviewRoutes);
+app.use('/api/records', recordsRoutes);
 
 // 健康检查
 app.get('/health', (req, res) => {

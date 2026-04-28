@@ -195,7 +195,7 @@ const PrdPromptPanel: React.FC<PrdPromptPanelProps> = ({ documentPath }) => {
         loading={loading}
         size="large"
       >
-        生成评审 Prompt
+        生成评审Prompt
       </Button>
 
       {generated && (

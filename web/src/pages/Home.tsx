@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Button, Space, message, Tabs, Spin, Card, Tag, Empty, Table } from 'antd';
-import { FileTextOutlined, HistoryOutlined, FileSearchOutlined, CopyOutlined, EditOutlined, FileAddOutlined, DashboardOutlined, EyeOutlined } from '@ant-design/icons';
+import { Layout, Button, Space, message, Tabs, Spin, Card, Tag, Empty, Table, Select } from 'antd';
+import { FileTextOutlined, HistoryOutlined, FileSearchOutlined, CopyOutlined, EditOutlined, FileAddOutlined, DashboardOutlined, EyeOutlined, CheckCircleOutlined, AppstoreOutlined, RocketOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -12,8 +12,8 @@ import PromptPanel from '../components/PromptPanel';
 import DocGeneratorPanel from '../components/DocGeneratorPanel';
 import PrdGeneratorPanel from '../components/PrdGeneratorPanel';
 import MainNavHeader, { MainNavKey } from '../components/MainNavHeader';
-import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree, saveFixedDoc } from '../services/api';
-import { DocNode, DiagnoseRecord, TimelineData } from '../types';
+import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree, saveFixedDoc, getRecentRecords } from '../services/api';
+import { DocNode, DiagnoseRecord, TimelineData, RecentRecordItem } from '../types';
 
 const { Sider, Content } = Layout;
 
@@ -26,7 +26,9 @@ const Home: React.FC = () => {
   const [selectedRecord, setSelectedRecord] = useState<DiagnoseRecord | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
   const [docTree, setDocTree] = useState<DocNode[]>([]);
-  const [loadingTree, setLoadingTree] = useState(false);
+  const [recentRecords, setRecentRecords] = useState<RecentRecordItem[]>([]);
+  const [loadingRecentRecords, setLoadingRecentRecords] = useState(false);
+  const [sourceFilter, setSourceFilter] = useState<'all' | RecentRecordItem['source']>('all');
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   // 文档内容
@@ -140,13 +142,11 @@ const Home: React.FC = () => {
 
   useEffect(() => {
     if (currentNav === 'records') {
-      loadDocTree();
+      loadRecentRecordList();
     }
   }, [currentNav]);
 
   const loadDocTree = async (): Promise<DocNode[]> => {
-    setLoadingTree(true);
-
     try {
       const data = await getDocTree();
       setDocTree(data);
@@ -154,25 +154,21 @@ const Home: React.FC = () => {
     } catch (e) {
       console.error('Failed to load doc tree:', e);
       return [];
-    } finally {
-      setLoadingTree(false);
     }
   };
 
-  const recentDocs = useMemo(() => {
-    const result: DocNode[] = [];
-    const traverse = (nodes: DocNode[]) => {
-      for (const node of nodes) {
-        if (node.type === 'file' && node.diagnoseStatus === 'has-history') {
-          result.push(node);
-        } else if (node.children) {
-          traverse(node.children);
-        }
-      }
-    };
-    traverse(docTree);
-    return result.sort((a, b) => (b.lastDiagnoseTime || '').localeCompare(a.lastDiagnoseTime || ''));
-  }, [docTree]);
+  const loadRecentRecordList = async () => {
+    setLoadingRecentRecords(true);
+    try {
+      const data = await getRecentRecords();
+      setRecentRecords(data);
+    } catch (e) {
+      console.error('Failed to load recent records:', e);
+      setRecentRecords([]);
+    } finally {
+      setLoadingRecentRecords(false);
+    }
+  };
 
   const loadDocContent = async () => {
     if (!selectedDoc) return;
@@ -662,7 +658,7 @@ const Home: React.FC = () => {
       key: 'prompt',
       label: (
         <span>
-          <FileAddOutlined /> 生成诊断
+          <FileAddOutlined /> 生成诊断Prompt
         </span>
       ),
       children: (
@@ -690,33 +686,49 @@ const Home: React.FC = () => {
     </Card>
   ) : null;
 
-  const getLatestRecordForDoc = (node: DocNode): DiagnoseRecord | null => {
-    if (!node.history || node.history.length === 0) {
-      return null;
+  const handleViewRecentRecord = (record: RecentRecordItem) => {
+    if (record.source === 'prdreview') {
+      const params = new URLSearchParams();
+      if (record.docPath) params.set('doc', record.docPath.replace(/^prd\//, ''));
+      params.set('record', record.timelinePath);
+      navigate(`/prd-review?${params.toString()}`);
+      return;
     }
 
-    return [...node.history].sort((a, b) => b.timestamp.localeCompare(a.timestamp))[0] || null;
-  };
-
-  const handleNavToDoc = (node: DocNode) => {
-    const latestRecord = getLatestRecordForDoc(node);
-    const params = new URLSearchParams();
-    params.set('doc', node.relativePath);
-
-    setSelectedDoc(node);
-
-    if (latestRecord) {
-      setSelectedRecord(latestRecord);
-      setActiveTab('report');
-      params.set('record', latestRecord.timelinePath);
-    } else {
-      setSelectedRecord(null);
-      setActiveTab('preview');
+    if (record.source === 'diagnose') {
+      const params = new URLSearchParams();
+      if (record.docPath) params.set('doc', record.docPath);
+      params.set('record', record.timelinePath);
+      navigate(`/?${params.toString()}`);
+      return;
     }
 
-    // 从最近记录进入详情时，直接跳转到文档诊断根路由
-    navigate(`/?${params.toString()}`, { replace: true });
+    if (record.source === 'docgen') {
+      navigate('/docgen');
+      return;
+    }
+
+    navigate('/?nav=prdgen');
   };
+
+  const getSourceIcon = (source: RecentRecordItem['source']) => {
+    switch (source) {
+      case 'diagnose':
+        return <CheckCircleOutlined style={{ color: '#1890ff' }} />;
+      case 'docgen':
+        return <FileTextOutlined style={{ color: '#52c41a' }} />;
+      case 'prdgen':
+        return <RocketOutlined style={{ color: '#722ed1' }} />;
+      case 'prdreview':
+        return <AppstoreOutlined style={{ color: '#fa8c16' }} />;
+      default:
+        return <HistoryOutlined style={{ color: '#8c8c8c' }} />;
+    }
+  };
+
+  const filteredRecentRecords = sourceFilter === 'all'
+    ? recentRecords
+    : recentRecords.filter((item) => item.source === sourceFilter);
 
   const handleTabChange = (key: string) => {
     setActiveTab(key);
@@ -844,31 +856,60 @@ const Home: React.FC = () => {
         )}
         {currentNav === 'records' && (
           <Content style={{ background: '#fff', padding: 24, overflow: 'auto' }}>
-            <h3 style={{ marginBottom: 16 }}>最近记录</h3>
-            {loadingTree ? (
+            <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0 }}>最近记录</h3>
+              <Space size={8}>
+                <span style={{ color: '#8c8c8c', fontSize: 13 }}>来源筛选</span>
+                <Select
+                  value={sourceFilter}
+                  onChange={(value) => setSourceFilter(value)}
+                  style={{ width: 180 }}
+                  options={[
+                    { value: 'all', label: '全部来源' },
+                    { value: 'diagnose', label: '帮助文档诊断' },
+                    { value: 'docgen', label: '帮助文档生成' },
+                    { value: 'prdgen', label: 'PRD生成' },
+                    { value: 'prdreview', label: 'PRD评审' },
+                  ]}
+                />
+              </Space>
+            </div>
+            {loadingRecentRecords ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}>
                 <Spin size="large" />
               </div>
             ) : (
               <Table
-                dataSource={recentDocs}
+                dataSource={filteredRecentRecords}
                 columns={[
-                  { title: '文档名称', dataIndex: 'name', key: 'name' },
-                  { title: '路径', dataIndex: 'relativePath', key: 'relativePath' },
-                  { title: '最近诊断时间', dataIndex: 'lastDiagnoseTime', key: 'lastDiagnoseTime' },
+                  {
+                    title: '来源',
+                    dataIndex: 'sourceLabel',
+                    key: 'sourceLabel',
+                    width: 160,
+                    render: (_, record) => (
+                      <Space size={6}>
+                        {getSourceIcon(record.source)}
+                        <span>{record.sourceLabel}</span>
+                      </Space>
+                    ),
+                  },
+                  { title: '记录名称', dataIndex: 'name', key: 'name' },
+                  { title: '路径', dataIndex: 'path', key: 'path' },
+                  { title: '最近时间', dataIndex: 'timestamp', key: 'timestamp', width: 180 },
                   {
                     title: '操作',
                     key: 'action',
                     render: (_, record) => (
-                      <Button type="link" onClick={() => handleNavToDoc(record)}>
+                      <Button type="link" onClick={() => handleViewRecentRecord(record)}>
                         查看详情
                       </Button>
                     ),
                   },
                 ]}
-                rowKey="relativePath"
+                rowKey="id"
                 pagination={{ pageSize: 10 }}
-                locale={{ emptyText: '暂无诊断记录' }}
+                locale={{ emptyText: '暂无最近记录' }}
               />
             )}
           </Content>

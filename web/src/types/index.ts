@@ -303,3 +303,16 @@ export interface RequirementTypeOption {
   label: string;
   description: string;
 }
+
+// 最近记录（统一聚合）
+export interface RecentRecordItem {
+  id: string;
+  source: 'diagnose' | 'docgen' | 'prdgen' | 'prdreview';
+  sourceLabel: '帮助文档诊断' | '帮助文档生成' | 'PRD生成' | 'PRD评审';
+  name: string;
+  path: string;
+  timestamp: string;
+  status?: string;
+  docPath?: string;
+  timelinePath: string;
+}

@@ -1,4 +1,4 @@
-import { ApiResponse, DocNode, DiagnoseRecord, TimelineData, DiagnoseDimension, GeneratePromptRequest, GeneratePromptResponse, PrdDocNode, PrdReviewRecord, PrdTimelineData, PrdDimension, PrdPerspective, GeneratePrdPromptRequest, GenerateDocPromptRequest, GenerateDocPromptResponse, DocTypeOption, TargetAudienceOption, GeneratePrdGenPromptRequest, GeneratePrdGenPromptResponse, RequirementTypeOption } from '../types';
+import { ApiResponse, DocNode, DiagnoseRecord, TimelineData, DiagnoseDimension, GeneratePromptRequest, GeneratePromptResponse, PrdDocNode, PrdReviewRecord, PrdTimelineData, PrdDimension, PrdPerspective, GeneratePrdPromptRequest, GenerateDocPromptRequest, GenerateDocPromptResponse, DocTypeOption, TargetAudienceOption, GeneratePrdGenPromptRequest, GeneratePrdGenPromptResponse, RequirementTypeOption, RecentRecordItem } from '../types';
 
 const BASE_URL = '/api';
 
@@ -203,6 +203,14 @@ export const generatePrdGenPrompt = async (request: GeneratePrdGenPromptRequest)
     body: JSON.stringify(request),
   });
   const data: ApiResponse<GeneratePrdGenPromptResponse> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取最近记录（统一）
+export const getRecentRecords = async (): Promise<RecentRecordItem[]> => {
+  const res = await fetch(`${BASE_URL}/records/recent`);
+  const data: ApiResponse<RecentRecordItem[]> = await res.json();
   if (!data.success) throw new Error(data.error);
   return data.data!;
 };

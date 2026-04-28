@@ -3,3 +3,4 @@ web/node_modules/*
 desktop/node_modules/*
 desktop/src-tauri/target/*
 backend/dist/*
+web/dist/*
