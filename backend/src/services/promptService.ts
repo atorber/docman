@@ -135,9 +135,7 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   prompt += `## 输出配置\n`;
   prompt += `- 时间戳: ${timestamp}\n\n`;
   prompt += `请按照「doc-generator」skill中的「执行流程」完成文档生成任务。\n`;
-  prompt += `截图执行要求：优先使用完整页面截图；若页面超长或工具不支持完整截图，请按页面自上而下分段滚动截图，确保覆盖页面顶部、主体和底部，避免仅截取首屏。\n`;
-  prompt += `截图前置要求（强制）：每次截图前必须等待页面完全加载并状态稳定（主内容可见、无明显 loading/骨架屏、短等待后状态不再变化）后再截图。\n`;
-  prompt += `左栏完整性校验（强制）：若页面为双栏布局，截图前必须确认左侧目录可见（.ant-layout-sider 可见，存在“帮助文档目录”或“PRD文档目录”文本，且左栏宽度不小于 200px）；不满足需重试，最多3次后刷新页面再截图。`;
+  prompt += `请严格遵循 skill 内的截图强约束（稳定性校验、完整性校验、双栏页面左栏可见性校验）。`;
 
   return {
     prompt,
