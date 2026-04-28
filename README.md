@@ -115,7 +115,7 @@ DocMan 采用「**Web 参数配置 + Prompt 生成 + 本地 Agent 执行 Skill**
 1. 在 DocMan Web 界面中选择任务类型（文档诊断、帮助文档生成、PRD生成、PRD评审）并配置参数  
 2. DocMan 后端根据配置生成标准化 Prompt（包含输入路径、输出路径、维度/视角等）  
 3. 在本地 Agent（如 **Claude Code**、**OpenClaw** 等）中执行该 Prompt  
-4. Agent 调用 DocMan 预置 Skill（`doc-consistency-verifier`、`doc-generator`、`prd-generator`、`prd-reviewer`）完成诊断/生成/评审  
+4. Agent 调用 DocMan 预置 Skill（`docman-bootstrap`、`doc-consistency-verifier`、`doc-generator`、`prd-generator`、`prd-reviewer`）完成部署/启动与诊断/生成/评审  
 5. 执行结果输出到项目目录（如 `report/`、`timeline/`、`new/`），并在 DocMan 的“最近记录”中统一查看和跳转
 
 > 说明：DocMan 本身不直接执行大模型任务，而是负责参数编排、Prompt 生成与结果可视化管理。
@@ -192,6 +192,17 @@ cd web
 npm run dev
 ```
 
+### 使用部署启动 Skill（推荐）
+
+首次在本地部署时，建议在项目根目录通过本地 Agent 调用 `docman-bootstrap`：
+
+- 自动检测运行环境（Node/npm、目录结构）
+- 自动安装前后端依赖
+- 自动启动前后端服务并校验可用性
+- 无法自动修复时给出分步骤人工操作建议
+
+可直接复制的一句话 Prompt：`请使用当前目录的 docman-bootstrap skill 启动当前 DocMan 项目。`
+
 ## 路由说明
 
 项目使用 React Router 实现多个主导航页面：
@@ -266,7 +277,8 @@ aihc-master/
 │   ├── doc-consistency-verifier/   # 文档诊断Skill
 │   ├── prd-reviewer/               # PRD评审Skill
 │   ├── doc-generator/              # 帮助文档生成Skill
-│   └── prd-generator/              # PRD生成Skill
+│   ├── prd-generator/              # PRD生成Skill
+│   └── docman-bootstrap/           # DocMan部署与启动Skill
 ├── backend/          # 后端API服务
 ├── web/              # Web可视化界面
 ├── raw/              # 原始文档目录
@@ -296,8 +308,10 @@ aihc-master/
 │   │   └── SKILL.md           # PRD评审Skill定义
 │   ├── doc-generator/
 │   │   └── SKILL.md           # 帮助文档生成Skill定义
-│   └── prd-generator/
-│       └── SKILL.md           # PRD生成Skill定义
+│   ├── prd-generator/
+│   │   └── SKILL.md           # PRD生成Skill定义
+│   └── docman-bootstrap/
+│       └── SKILL.md           # DocMan部署与启动Skill定义
 │
 ├── backend/
 │   ├── src/
