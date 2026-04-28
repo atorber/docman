@@ -1,0 +1,53 @@
+{
+  "type": "docgen",
+  "source": "帮助文档生成",
+  "timestamp": "2026-04-28T23:22:57+08:00",
+  "prd_source": "prd/DocMan/DocMan产品需求说明书.md",
+  "console_url": "http://localhost:3000",
+  "document_type": "操作指南",
+  "target_audience": "普通用户",
+  "output_format": "Markdown",
+  "output_path": "raw/产品官网文档/04-使用指南/操作说明.md",
+  "feature_count": 5,
+  "screenshot_count": 7,
+  "sections": [
+    "概述",
+    "前提条件",
+    "功能模块一：帮助文档诊断",
+    "功能模块二：帮助文档生成",
+    "功能模块三：PRD生成",
+    "功能模块四：PRD评审",
+    "功能模块五：最近记录",
+    "输出文件说明",
+    "常见问题"
+  ],
+  "steps": [
+    {
+      "step": 1,
+      "action": "读取PRD文档",
+      "target": "prd/DocMan/DocMan产品需求说明书.md",
+      "status": "completed"
+    },
+    {
+      "step": 2,
+      "action": "启动浏览器，探索控制台页面",
+      "target": "http://localhost:3000",
+      "status": "completed",
+      "screenshots": [
+        "output/images/DocMan/01_文档诊断首页.png",
+        "output/images/DocMan/02_生成诊断Prompt面板.png",
+        "output/images/DocMan/05_帮助文档生成页面_完整.png",
+        "output/images/DocMan/06_帮助文档生成页面_底部.png",
+        "output/images/DocMan/08_PRD评审页面_完整.png",
+        "output/images/DocMan/08b_PRD评审_生成Prompt面板.png",
+        "output/images/DocMan/09_最近记录页面.png"
+      ]
+    },
+    {
+      "step": 3,
+      "action": "生成操作说明文档",
+      "target": "raw/产品官网文档/04-使用指南/操作说明.md",
+      "status": "completed"
+    }
+  ]
+}
