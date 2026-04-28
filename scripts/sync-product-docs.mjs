@@ -47,6 +47,10 @@ function sortZh(items) {
   return items.sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
 }
 
+function toDisplayName(name) {
+  return name.replace(/^\d+\s*[-_.、]\s*/, '');
+}
+
 async function buildSidebarLines(dir, relFromContent = '') {
   const lines = [];
   const current = path.join(dir, relFromContent);
@@ -62,14 +66,14 @@ async function buildSidebarLines(dir, relFromContent = '') {
   for (const file of files) {
     const fileRel = path.posix.join(relFromContent.replace(/\\/g, '/'), file);
     const fileBase = file.replace(/\.md$/i, '');
-    lines.push(`- [${fileBase}](content/产品官网文档/${fileRel})`);
+    lines.push(`- [${toDisplayName(fileBase)}](content/产品官网文档/${fileRel})`);
   }
 
   for (const subdir of dirs) {
     const subRel = path.posix.join(relFromContent.replace(/\\/g, '/'), subdir);
     const childLines = await buildSidebarLines(dir, subRel);
     if (childLines.length === 0) continue;
-    lines.push(`- ${subdir}`);
+    lines.push(`- ${toDisplayName(subdir)}`);
     for (const line of childLines) {
       lines.push(`  ${line}`);
     }
