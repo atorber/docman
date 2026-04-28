@@ -135,7 +135,8 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   prompt += `## 输出配置\n`;
   prompt += `- 时间戳: ${timestamp}\n\n`;
   prompt += `请按照「doc-generator」skill中的「执行流程」完成文档生成任务。\n`;
-  prompt += `截图执行要求：优先使用完整页面截图；若页面超长或工具不支持完整截图，请按页面自上而下分段滚动截图，确保覆盖页面顶部、主体和底部，避免仅截取首屏。`;
+  prompt += `截图执行要求：优先使用完整页面截图；若页面超长或工具不支持完整截图，请按页面自上而下分段滚动截图，确保覆盖页面顶部、主体和底部，避免仅截取首屏。\n`;
+  prompt += `截图前置要求（强制）：每次截图前必须等待页面完全加载并状态稳定（主内容可见、无明显 loading/骨架屏、短等待后状态不再变化）后再截图。`;
 
   return {
     prompt,
