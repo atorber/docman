@@ -5,6 +5,7 @@
     "dev": "sh -c 'npm --prefix backend run dev & npm --prefix web run dev & wait'",
     "dev:debug": "sh -c 'npm --prefix backend run dev:debug & npm --prefix web run dev & wait'",
     "dev:backend": "npm --prefix backend run dev",
-    "dev:web": "npm --prefix web run dev"
+    "dev:web": "npm --prefix web run dev",
+    "docs:sync": "node scripts/sync-product-docs.mjs"
   }
 }

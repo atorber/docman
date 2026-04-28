@@ -28,11 +28,13 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
+      - name: Sync product docs into docs site
+        run: npm run docs:sync
+
       - name: Build static site artifact
         run: |
-          mkdir -p site/content
+          mkdir -p site
           cp -R docs/* site/
-          cp -R "raw/产品官网文档" "site/content/"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
