@@ -11,9 +11,10 @@ import HistoryList from '../components/HistoryList';
 import PromptPanel from '../components/PromptPanel';
 import DocGeneratorPanel from '../components/DocGeneratorPanel';
 import PrdGeneratorPanel from '../components/PrdGeneratorPanel';
+import PrdTree from '../components/PrdTree';
 import MainNavHeader, { MainNavKey } from '../components/MainNavHeader';
 import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree, saveFixedDoc, getRecentRecords } from '../services/api';
-import { DocNode, DiagnoseRecord, TimelineData, RecentRecordItem } from '../types';
+import { DocNode, DiagnoseRecord, TimelineData, RecentRecordItem, PrdDocNode } from '../types';
 
 const { Sider, Content } = Layout;
 
@@ -23,6 +24,7 @@ const Home: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const [selectedDoc, setSelectedDoc] = useState<DocNode | null>(null);
+  const [selectedPrdDoc, setSelectedPrdDoc] = useState<PrdDocNode | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<DiagnoseRecord | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
   const [docTree, setDocTree] = useState<DocNode[]>([]);
@@ -210,6 +212,14 @@ const Home: React.FC = () => {
     if (initialLoadDone) {
       updateUrl(node, undefined);
     }
+  };
+
+  const handleSelectDocForDocGen = (node: DocNode) => {
+    setSelectedDoc(node);
+  };
+
+  const handleSelectPrdDocForPrdGen = (node: PrdDocNode) => {
+    setSelectedPrdDoc(node);
   };
 
   const handleSelectRecord = (record: DiagnoseRecord) => {
@@ -845,14 +855,30 @@ const Home: React.FC = () => {
           </>
         )}
         {currentNav === 'docgen' && (
-          <Content style={{ background: '#fff', overflow: 'hidden' }}>
-            <DocGeneratorPanel />
-          </Content>
+          <>
+            <Sider width={280} style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}>
+              <div style={{ padding: 16, height: 'calc(100vh - 64px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ marginBottom: 16 }}>帮助文档目录</h3>
+                <DocTree onSelectDoc={handleSelectDocForDocGen} selectedDocPath={selectedDoc?.relativePath} defaultSelectFirst={false} />
+              </div>
+            </Sider>
+            <Content style={{ background: '#fff', overflow: 'hidden' }}>
+              <DocGeneratorPanel />
+            </Content>
+          </>
         )}
         {currentNav === 'prdgen' && (
-          <Content style={{ background: '#fff', overflow: 'hidden' }}>
-            <PrdGeneratorPanel />
-          </Content>
+          <>
+            <Sider width={280} style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}>
+              <div style={{ padding: 16, height: 'calc(100vh - 64px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ marginBottom: 16 }}>PRD文档目录</h3>
+                <PrdTree onSelectDoc={handleSelectPrdDocForPrdGen} selectedDocPath={selectedPrdDoc?.relativePath} defaultSelectFirst={false} />
+              </div>
+            </Sider>
+            <Content style={{ background: '#fff', overflow: 'hidden' }}>
+              <PrdGeneratorPanel />
+            </Content>
+          </>
         )}
         {currentNav === 'records' && (
           <Content style={{ background: '#fff', padding: 24, overflow: 'auto' }}>
