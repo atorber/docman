@@ -20,7 +20,8 @@ const PrdReview: React.FC = () => {
 
   const [selectedDoc, setSelectedDoc] = useState<PrdDocNode | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<PrdReviewRecord | null>(null);
-  const [activeTab, setActiveTab] = useState('preview');
+  const [activeMainTab, setActiveMainTab] = useState('preview');
+  const [activeHistoryTab, setActiveHistoryTab] = useState('report');
   const [docTree, setDocTree] = useState<PrdDocNode[]>([]);
   const [initialLoadDone, setInitialLoadDone] = useState(false);
 
@@ -74,7 +75,8 @@ const PrdReview: React.FC = () => {
             if (record.doc) {
               setSelectedDoc(record.doc);
             }
-            setActiveTab('report');
+            setActiveMainTab('history');
+            setActiveHistoryTab('report');
           }
         } else if (docPath) {
           const findDoc = (nodes: PrdDocNode[]): PrdDocNode | null => {
@@ -90,7 +92,7 @@ const PrdReview: React.FC = () => {
           const doc = findDoc(treeData);
           if (doc) {
             setSelectedDoc(doc);
-            setActiveTab('preview');
+            setActiveMainTab('preview');
           }
         }
       }
@@ -158,7 +160,7 @@ const PrdReview: React.FC = () => {
   const handleSelectDoc = (node: PrdDocNode) => {
     setSelectedDoc(node);
     setSelectedRecord(null);
-    setActiveTab('preview');
+    setActiveMainTab('preview');
     if (initialLoadDone) {
       updateUrl(node, undefined);
     }
@@ -166,6 +168,8 @@ const PrdReview: React.FC = () => {
 
   const handleSelectRecord = (record: PrdReviewRecord) => {
     setSelectedRecord(record);
+    setActiveMainTab('history');
+    setActiveHistoryTab('report');
     if (initialLoadDone) {
       updateUrl(record.doc, record);
     }
@@ -345,8 +349,8 @@ const PrdReview: React.FC = () => {
           {selectedRecord && (
             <div style={{ flex: 1, marginTop: 16, overflow: 'auto' }}>
               <Tabs
-                activeKey={activeTab === 'history' ? 'report' : activeTab}
-                onChange={(key) => setActiveTab(key)}
+                activeKey={activeHistoryTab}
+                onChange={(key) => setActiveHistoryTab(key)}
                 items={[
                   {
                     key: 'report',
@@ -428,8 +432,8 @@ const PrdReview: React.FC = () => {
         <Content style={{ background: '#fff', padding: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {docInfoCard}
           <Tabs
-            activeKey={activeTab}
-            onChange={setActiveTab}
+            activeKey={activeMainTab}
+            onChange={setActiveMainTab}
             items={tabItems}
             style={{ flex: 1 }}
           />

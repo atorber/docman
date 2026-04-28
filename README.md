@@ -1,6 +1,6 @@
 # DocMan
 
-一个面向产品帮助文档的智能诊断系统，帮助发现文档中的各种质量问题。同时支持产品需求文档(PRD)的多视角评审。
+一个面向产品文档全生命周期的智能助手，覆盖帮助文档诊断、帮助文档生成、PRD生成与PRD多视角评审，并提供统一的最近记录聚合与详情跳转能力。
 
 ## 产品介绍
 
@@ -22,10 +22,12 @@
 
 ### 解决方案
 
-本项目是一个**文档全能助手**，提供两大核心功能：
+本项目是一个**文档全能助手**，提供四大核心功能：
 
 1. **文档诊断**：通过自动化的方式对产品帮助文档进行全方位质量检查
 2. **PRD评审**：从多个专业视角评审产品需求文档，发现需求和风险
+3. **帮助文档生成**：基于 PRD 与控制台 URL 生成帮助文档 Prompt
+4. **PRD生成**：基于需求信息、竞品链接与本地参考文档生成 PRD Prompt
 
 ### 核心能力
 
@@ -82,15 +84,15 @@
    - 点击后自动滚动到诊断报告对应章节锚点
    - 快速定位具体问题描述
 
-#### 六、最近记录直达报告
-   - "最近记录"列表中的"查看详情"可直接跳转到文档诊断页
-   - 自动打开该文档最新一次诊断报告
-   - 无需手动切换TAB和选择历史记录
+#### 六、统一最近记录中心
+   - "最近记录"统一聚合四类来源：帮助文档诊断、帮助文档生成、PRD生成、PRD评审
+   - 支持按来源筛选，并通过来源图标快速区分记录类型
+   - "查看详情"按来源跳转到对应页面（诊断/评审可携带参数直达）
 
 #### 七、一键生成Prompt
-   - 配置诊断/评审参数
-   - 自动生成完整的Prompt
-   - 可直接在Comate中执行诊断/评审
+   - 配置诊断/评审/帮助文档生成/PRD生成参数
+   - 自动生成完整的 Prompt
+   - 可直接在 Comate 中执行对应任务
 
 ### 适用场景
 
@@ -112,7 +114,9 @@
 aihc-master/
 ├── skills/           # Skill定义
 │   ├── doc-consistency-verifier/   # 文档诊断Skill
-│   └── prd-reviewer/               # PRD评审Skill
+│   ├── prd-reviewer/               # PRD评审Skill
+│   ├── doc-generator/              # 帮助文档生成Skill
+│   └── prd-generator/              # PRD生成Skill
 ├── backend/          # 后端API服务
 ├── web/              # Web可视化界面
 ├── raw/              # 原始文档目录
@@ -180,23 +184,26 @@ npm run dev
    复制生成的Prompt，在Comate中执行诊断
 
 6. **查看结果**
-   诊断完成后刷新页面，或从"最近记录"直接查看诊断报告
+   任务完成后刷新页面，或从"最近记录"按来源筛选并查看详情
 
 ## 路由说明
 
-项目使用 React Router 实现多个独立主TAB：
+项目使用 React Router 实现多个主导航页面：
 
 | 路由 | 说明 |
 |------|------|
 | `/` 或 `/diagnose` | 文档诊断首页（左侧文档树 + 右侧内容区） |
-| `/records` | 最近记录页面（全站诊断历史列表） |
+| `/records` | 最近记录页面（统一聚合多来源记录） |
+| `/docgen` | 帮助文档生成页面 |
+| `/?nav=prdgen` | PRD生成页面 |
 | `/prd-review` | PRD评审首页（左侧PRD文档树 + 右侧内容区） |
-| `/prd-records` | PRD评审记录页面 |
 
-**注意**：各主TAB为独立路由，切换时不携带跨页参数。
+**注意**：各主页面为独立路由，切换时不携带跨页参数。
 
 - 文档诊断页：`/?doc=路径&record=timeline路径&tab=preview`
 - 最近记录页：`/records`
+- 帮助文档生成页：`/docgen`
+- PRD生成页：`/?nav=prdgen`
 - PRD评审页：`/prd-review?doc=路径&record=timeline路径`
 
 ### URL 分享跳转
@@ -240,7 +247,7 @@ npm run dev
 | raw/ | 原始文档 | - |
 | new/ | 修复后的文档 | [文档名]_[时间戳]_new.md |
 | report/ | 诊断报告（含锚点） | [文档名]_[时间戳]_report.md |
-| timeline/ | 诊断过程记录 | [文档名]_[时间戳]_timeline.json |
+| timeline/ | 诊断/生成/评审过程记录 | [文档名]_[时间戳]_timeline.json |
 | screenshots/ | 诊断过程中截取的系统截图 | 按文档路径组织 |
 
 ## 项目结构
@@ -250,8 +257,12 @@ aihc-master/
 ├── skills/
 │   ├── doc-consistency-verifier/
 │   │   └── SKILL.md           # 文档诊断Skill定义
-│   └── prd-reviewer/
-│       └── SKILL.md           # PRD评审Skill定义
+│   ├── prd-reviewer/
+│   │   └── SKILL.md           # PRD评审Skill定义
+│   ├── doc-generator/
+│   │   └── SKILL.md           # 帮助文档生成Skill定义
+│   └── prd-generator/
+│       └── SKILL.md           # PRD生成Skill定义
 │
 ├── backend/
 │   ├── src/
@@ -265,7 +276,8 @@ aihc-master/
 │   │       ├── document.ts    # 文档API
 │   │       ├── diagnose.ts    # 诊断API
 │   │       ├── prompt.ts      # Prompt API
-│   │       └── prdReview.ts   # PRD评审API
+│   │       ├── prdReview.ts   # PRD评审API
+│   │       └── records.ts     # 最近记录聚合API
 │   ├── package.json
 │   └── tsconfig.json
 │
@@ -280,9 +292,11 @@ aihc-master/
 │   │   │   ├── PromptPreview/ # Prompt预览
 │   │   │   ├── PrdTree/       # PRD文档树
 │   │   │   ├── PrdHistoryList/ # PRD评审历史
-│   │   │   └── PrdPromptPanel/ # PRD评审Prompt面板
+│   │   │   ├── PrdPromptPanel/ # PRD评审Prompt面板
+│   │   │   ├── DocGeneratorPanel/ # 帮助文档生成面板
+│   │   │   └── PrdGeneratorPanel/ # PRD生成面板
 │   │   ├── pages/
-│   │   │   ├── Home.tsx       # 文档诊断主页面
+│   │   │   ├── Home.tsx       # 主页面（诊断/最近记录/文档生成/PRD生成入口）
 │   │   │   └── PrdReview.tsx  # PRD评审主页面
 │   │   ├── App.tsx            # 路由配置
 │   │   ├── services/api.ts
@@ -317,6 +331,11 @@ aihc-master/
 3. 过程记录输出到 `timeline/prd/` 目录
 4. 评审结论仅供参考，最终决策由团队共同确定
 5. 对于复杂的PRD，建议分多次评审，每次聚焦特定视角
+
+### 帮助文档生成与PRD生成
+1. 生成类功能通过 Prompt 驱动执行，页面负责参数配置与 Prompt 生成
+2. PRD生成支持配置输出路径、填写多个竞品链接、并多选本地参考文档（`prd/` 下 `.md`）
+3. 最近记录可按来源筛选并跳转到对应页面，便于统一追踪全链路任务
 
 ## 后续规划
 
