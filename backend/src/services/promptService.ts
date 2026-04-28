@@ -9,7 +9,7 @@ export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptRe
   const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
   // 构建调用skill的指令（精简版，只包含动态参数）
-  let prompt = `请使用「doc-consistency-verifier」skill执行以下文档诊断任务。\n\n`;
+  let prompt = `请使用当前工作目录的「doc-consistency-verifier」skill执行以下文档诊断任务。\n\n`;
   prompt += `# 文档诊断\n\n`;
   prompt += `## 文档信息\n`;
   prompt += `- 原始文档路径: raw/${documentPath}\n`;
