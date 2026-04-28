@@ -67,8 +67,9 @@ async function buildSidebarLines(dir, relFromContent = '') {
 
   for (const subdir of dirs) {
     const subRel = path.posix.join(relFromContent.replace(/\\/g, '/'), subdir);
-    lines.push(`- ${subdir}`);
     const childLines = await buildSidebarLines(dir, subRel);
+    if (childLines.length === 0) continue;
+    lines.push(`- ${subdir}`);
     for (const line of childLines) {
       lines.push(`  ${line}`);
     }
