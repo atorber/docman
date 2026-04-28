@@ -136,6 +136,7 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   prompt += `- 时间戳: ${timestamp}\n\n`;
   prompt += `请按照「doc-generator」skill中的「执行流程」完成文档生成任务。\n`;
   prompt += `请严格遵循 skill 内的截图强约束（稳定性校验、完整性校验、双栏页面左栏可见性校验）。`;
+  prompt += `\n请严格执行会话收尾：任务结束后关闭本次浏览器会话，收尾后不得再次自动打开浏览器。`;
 
   return {
     prompt,
