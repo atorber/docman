@@ -226,6 +226,7 @@ export interface GenerateDocPromptRequest {
   outputFormat?: 'Markdown' | 'HTML';  // 输出格式
   useLoggedInBrowser?: boolean;     // 使用已登录浏览器
   showBrowserUI?: boolean;          // 显示浏览器界面
+  screenshotMode?: 'fullpage' | 'viewport'; // 截图模式：完整页面/可视区域
 }
 
 // 帮助文档生成响应

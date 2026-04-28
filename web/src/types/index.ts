@@ -248,6 +248,7 @@ export interface GenerateDocPromptRequest {
   outputFormat?: 'Markdown' | 'HTML';
   useLoggedInBrowser?: boolean;
   showBrowserUI?: boolean;
+  screenshotMode?: 'fullpage' | 'viewport';
 }
 
 // 帮助文档生成Prompt响应

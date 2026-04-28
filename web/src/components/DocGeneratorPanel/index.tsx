@@ -24,6 +24,7 @@ const DocGeneratorPanel: React.FC = () => {
   const [outputFormat, setOutputFormat] = useState<string>('Markdown');
   const [useLoggedInBrowser, setUseLoggedInBrowser] = useState(true);
   const [showBrowserUI, setShowBrowserUI] = useState(false);
+  const [screenshotMode, setScreenshotMode] = useState<'fullpage' | 'viewport'>('fullpage');
 
   // 生成的Prompt
   const [generatedPrompt, setGeneratedPrompt] = useState('');
@@ -132,6 +133,7 @@ const DocGeneratorPanel: React.FC = () => {
         outputFormat: outputFormat as 'Markdown' | 'HTML',
         useLoggedInBrowser,
         showBrowserUI,
+        screenshotMode,
       });
       setGeneratedPrompt(result.prompt);
       messageApi.success('Prompt生成成功');
@@ -330,6 +332,22 @@ const DocGeneratorPanel: React.FC = () => {
             </Checkbox>
             <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4, marginLeft: 24 }}>
               勾选后将显示浏览器窗口，可观察自动化操作过程。
+            </div>
+
+            <div style={{ marginTop: 12 }}>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>截图模式</div>
+              <Select
+                value={screenshotMode}
+                onChange={(value) => setScreenshotMode(value)}
+                style={{ width: '100%' }}
+                options={[
+                  { value: 'fullpage', label: '完整页面（推荐）' },
+                  { value: 'viewport', label: '仅可视区域' },
+                ]}
+              />
+              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                选择“完整页面”后，Prompt会要求优先输出整页截图，避免只截取首屏。
+              </div>
             </div>
           </Space>
         </Card>

@@ -89,10 +89,17 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
     targetAudience = '普通用户',
     outputFormat = 'Markdown',
     useLoggedInBrowser,
-    showBrowserUI 
+    showBrowserUI,
+    screenshotMode = 'fullpage'
   } = request;
 
-  const prdName = prdPath.split('/').pop() || prdPath;
+  const normalizePrdPath = (inputPath: string): string => {
+    const trimmed = inputPath.trim().replace(/\\/g, '/').replace(/^\.?\//, '');
+    return trimmed.startsWith('prd/') ? trimmed : `prd/${trimmed}`;
+  };
+
+  const normalizedPrdPath = normalizePrdPath(prdPath);
+  const prdName = normalizedPrdPath.split('/').pop() || normalizedPrdPath;
   const now = new Date();
   const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
 
@@ -100,7 +107,7 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   let prompt = `请使用当前工作目录的「doc-generator」skill执行以下帮助文档生成任务。\n\n`;
   prompt += `# 帮助文档生成\n\n`;
   prompt += `## 输入信息\n`;
-  prompt += `- PRD文档路径（输入）: ${prdPath}\n`;
+  prompt += `- PRD文档路径（输入）: ${normalizedPrdPath}\n`;
   prompt += `- 控制台URL: ${consoleUrl}\n`;
   if (productName) {
     prompt += `- 产品名称: ${productName}\n`;
@@ -122,14 +129,17 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
     prompt += `- 显示浏览器界面: 是\n`;
   }
 
+  prompt += `- 截图模式: ${screenshotMode === 'fullpage' ? '完整页面（fullpage）' : '可视区域（viewport）'}\n`;
+
   prompt += `\n`;
   prompt += `## 输出配置\n`;
   prompt += `- 时间戳: ${timestamp}\n\n`;
-  prompt += `请按照「doc-generator」skill中的「执行流程」完成文档生成任务。`;
+  prompt += `请按照「doc-generator」skill中的「执行流程」完成文档生成任务。\n`;
+  prompt += `截图执行要求：优先使用完整页面截图；若页面超长或工具不支持完整截图，请按页面自上而下分段滚动截图，确保覆盖页面顶部、主体和底部，避免仅截取首屏。`;
 
   return {
     prompt,
-    prdPath,
+    prdPath: normalizedPrdPath,
     outputPath,
     prdName,
     productName,
