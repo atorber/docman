@@ -108,32 +108,58 @@
 - 迭代规划时的需求确认
 - 需求变更影响分析
 
-## 技术架构
+## 工作原理
 
-```
-aihc-master/
-├── skills/           # Skill定义
-│   ├── doc-consistency-verifier/   # 文档诊断Skill
-│   ├── prd-reviewer/               # PRD评审Skill
-│   ├── doc-generator/              # 帮助文档生成Skill
-│   └── prd-generator/              # PRD生成Skill
-├── backend/          # 后端API服务
-├── web/              # Web可视化界面
-├── raw/              # 原始文档目录
-├── prd/              # PRD文档目录
-├── new/              # 修复后的文档
-├── report/           # 诊断/评审报告
-├── timeline/         # 过程记录
-└── screenshots/      # 诊断截图
-```
+DocMan 采用「**Web 参数配置 + Prompt 生成 + 本地 Agent 执行 Skill**」的模式：
 
-### 技术栈
+1. 在 DocMan Web 界面中选择任务类型（文档诊断、帮助文档生成、PRD生成、PRD评审）并配置参数  
+2. DocMan 后端根据配置生成标准化 Prompt（包含输入路径、输出路径、维度/视角等）  
+3. 在本地 Agent（如 **Claude Code**、**OpenClaw** 等）中执行该 Prompt  
+4. Agent 调用 DocMan 预置 Skill（`doc-consistency-verifier`、`doc-generator`、`prd-generator`、`prd-reviewer`）完成诊断/生成/评审  
+5. 执行结果输出到项目目录（如 `report/`、`timeline/`、`new/`），并在 DocMan 的“最近记录”中统一查看和跳转
 
-| 层级 | 技术 |
-|------|------|
-| 前端 | React + TypeScript + Ant Design + Vite + React Router |
-| 后端 | Node.js + Express + TypeScript |
-| 诊断引擎 | Comate Skill |
+> 说明：DocMan 本身不直接执行大模型任务，而是负责参数编排、Prompt 生成与结果可视化管理。
+
+## 使用流程
+
+1. **按目录准备文档**
+   - 帮助文档诊断输入文档放在 `raw/`
+   - PRD评审 / PRD生成 / 本地参考文档放在 `prd/`
+   - 目录结构需保持与项目约定一致，否则无法正确发现文件和生成记录
+
+2. **打开 Web 界面**
+   访问 http://localhost:3000
+
+3. **选择任务与输入**
+   - 文档诊断：在左侧文档树选择待诊断文档
+   - PRD评审：进入 PRD评审页选择待评审 PRD
+   - 帮助文档生成 / PRD生成：在对应页面配置输入参数、输出位置、可选高级项
+
+4. **生成 Prompt**
+   在对应页面点击生成，复制生成的 Prompt
+
+5. **在本地 Agent 执行**
+   在 Claude Code、OpenClaw 等本地 Agent 中执行 Prompt，触发对应 Skill 完成任务
+
+6. **回到 DocMan 查看结果**
+   执行完成后刷新页面，通过“最近记录”按来源筛选并查看详情
+
+### 文档诊断典型流程（示例）
+
+1. **选择文档**
+   在左侧文档目录树中选择需要诊断的文档
+
+2. **查看诊断历史**
+   "诊断历史"面板显示该文档的历史诊断记录
+
+3. **生成诊断 Prompt**
+   点击"生成诊断"TAB，配置诊断参数后生成Prompt
+
+4. **执行诊断**
+   复制生成的 Prompt，在本地 Agent 中执行诊断
+
+5. **查看结果**
+   任务完成后刷新页面，或从"最近记录"按来源筛选并查看详情
 
 ## 快速开始
 
@@ -165,26 +191,6 @@ npm run dev
 cd web
 npm run dev
 ```
-
-### 使用流程
-
-1. **打开Web界面**
-   访问 http://localhost:3000
-
-2. **选择文档**
-   在左侧文档目录树中选择需要诊断的文档
-
-3. **查看诊断历史**
-   "诊断历史"面板显示该文档的历史诊断记录
-
-4. **生成诊断Prompt**
-   点击"生成诊断"TAB，配置诊断参数后生成Prompt
-
-5. **执行诊断**
-   复制生成的Prompt，在Comate中执行诊断
-
-6. **查看结果**
-   任务完成后刷新页面，或从"最近记录"按来源筛选并查看详情
 
 ## 路由说明
 
@@ -250,7 +256,36 @@ npm run dev
 | timeline/ | 诊断/生成/评审过程记录 | [文档名]_[时间戳]_timeline.json |
 | screenshots/ | 诊断过程中截取的系统截图 | 按文档路径组织 |
 
-## 项目结构
+## 二次开发
+
+### 技术架构
+
+```
+aihc-master/
+├── skills/           # Skill定义
+│   ├── doc-consistency-verifier/   # 文档诊断Skill
+│   ├── prd-reviewer/               # PRD评审Skill
+│   ├── doc-generator/              # 帮助文档生成Skill
+│   └── prd-generator/              # PRD生成Skill
+├── backend/          # 后端API服务
+├── web/              # Web可视化界面
+├── raw/              # 原始文档目录
+├── prd/              # PRD文档目录
+├── new/              # 修复后的文档
+├── report/           # 诊断/评审报告
+├── timeline/         # 过程记录
+└── screenshots/      # 诊断截图
+```
+
+### 技术栈
+
+| 层级 | 技术 |
+|------|------|
+| 前端 | React + TypeScript + Ant Design + Vite + React Router |
+| 后端 | Node.js + Express + TypeScript |
+| 诊断引擎 | Comate Skill |
+
+### 项目结构
 
 ```
 aihc-master/
