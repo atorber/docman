@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Button, Space, Input, Select, message, Checkbox, Card, Divider, Alert } from 'antd';
-import { PlayCircleOutlined, CopyOutlined, FileTextOutlined, GlobalOutlined, AppstoreOutlined } from '@ant-design/icons';
-import { getDocTypes, getTargetAudiences, generateDocPrompt } from '../../services/api';
-import { DocTypeOption, TargetAudienceOption } from '../../types';
+import { PlayCircleOutlined, CopyOutlined, FileTextOutlined, GlobalOutlined, AppstoreOutlined, FolderOpenOutlined } from '@ant-design/icons';
+import { getDocTypes, getTargetAudiences, generateDocPrompt, getDocTree } from '../../services/api';
+import { DocNode, DocTypeOption, TargetAudienceOption } from '../../types';
 
 const { TextArea } = Input;
 
@@ -10,11 +10,12 @@ const DocGeneratorPanel: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [docTypes, setDocTypes] = useState<DocTypeOption[]>([]);
   const [targetAudiences, setTargetAudiences] = useState<TargetAudienceOption[]>([]);
+  const [rawParentDirs, setRawParentDirs] = useState<string[]>([]);
 
   // 表单状态
-  const [prdPath, setPrdPath] = useState('');
+  const [parentDir, setParentDir] = useState<string>('');
+  const [docName, setDocName] = useState<string>('');
   const [consoleUrl, setConsoleUrl] = useState('');
-  const [productName, setProductName] = useState('');
   const [docType, setDocType] = useState<string>('操作指南');
   const [targetAudience, setTargetAudience] = useState<string>('普通用户');
   const [outputFormat, setOutputFormat] = useState<string>('Markdown');
@@ -31,18 +32,61 @@ const DocGeneratorPanel: React.FC = () => {
 
   const loadOptions = async () => {
     try {
-      const [types, audiences] = await Promise.all([
+      const [types, audiences, tree] = await Promise.all([
         getDocTypes(),
         getTargetAudiences(),
+        getDocTree(),
       ]);
       setDocTypes(types);
       setTargetAudiences(audiences);
+      setRawParentDirs(extractRawParentDirs(tree));
     } catch (e) {
       console.error('Failed to load options:', e);
     }
   };
 
+  const extractRawParentDirs = (nodes: DocNode[]): string[] => {
+    const dirs = new Set<string>();
+
+    const walk = (items: DocNode[]) => {
+      for (const node of items) {
+        if (node.type === 'directory') {
+          dirs.add(node.relativePath);
+          if (node.children && node.children.length > 0) {
+            walk(node.children);
+          }
+        }
+      }
+    };
+
+    walk(nodes);
+    return Array.from(dirs).sort((a, b) => a.localeCompare(b));
+  };
+
+  const getNormalizedDocName = (value: string): string => {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    return trimmed.endsWith('.md') ? trimmed : `${trimmed}.md`;
+  };
+
+  const getPrdPath = (): string => {
+    const normalizedName = getNormalizedDocName(docName);
+    if (!normalizedName) return '';
+    if (!parentDir) return normalizedName;
+    return `${parentDir}/${normalizedName}`;
+  };
+
   const handleGenerate = async () => {
+    if (!parentDir) {
+      message.warning('请先选择文档父目录');
+      return;
+    }
+    if (!docName.trim()) {
+      message.warning('请输入文档名称');
+      return;
+    }
+
+    const prdPath = getPrdPath();
     if (!prdPath) {
       message.warning('请输入PRD文档路径');
       return;
@@ -51,17 +95,11 @@ const DocGeneratorPanel: React.FC = () => {
       message.warning('请输入控制台URL');
       return;
     }
-    if (!productName) {
-      message.warning('请输入产品名称');
-      return;
-    }
-
     setLoading(true);
     try {
       const result = await generateDocPrompt({
         prdPath,
         consoleUrl,
-        productName,
         docType: docType as '快速入门' | '操作指南' | '功能说明',
         targetAudience: targetAudience as '开发者' | '运维人员' | '普通用户',
         outputFormat: outputFormat as 'Markdown' | 'HTML',
@@ -96,24 +134,49 @@ const DocGeneratorPanel: React.FC = () => {
         />
 
         {/* 基础信息 */}
-        <Card title={<span><FileTextOutlined /> 基础信息</span>} size="small">
+        <Card title={<span><FolderOpenOutlined /> 步骤1：选择文档位置</span>} size="small">
           <Space direction="vertical" style={{ width: '100%' }} size="middle">
-            {/* PRD文档路径 */}
             <div>
               <div style={{ marginBottom: 8, fontWeight: 500 }}>
-                PRD文档路径 <span style={{ color: '#ff4d4f' }}>*</span>
+                文档父目录（raw 下） <span style={{ color: '#ff4d4f' }}>*</span>
               </div>
-              <Input
-                placeholder="如: prd/AIHC_功能需求文档.md"
-                value={prdPath}
-                onChange={e => setPrdPath(e.target.value)}
-                prefix={<FileTextOutlined />}
+              <Select
+                placeholder="请选择 raw 下的父目录"
+                value={parentDir || undefined}
+                onChange={setParentDir}
+                style={{ width: '100%' }}
+                showSearch
+                options={rawParentDirs.map((dir) => ({ value: dir, label: dir }))}
+                optionFilterProp="label"
               />
-              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
-                支持 .md, .docx, .txt, .pdf 格式
-              </div>
             </div>
 
+            <div>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>
+                文档名称 <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+              <Input
+                placeholder="如: AIHC_功能需求文档（可不写 .md）"
+                value={docName}
+                onChange={(e) => setDocName(e.target.value)}
+                prefix={<FileTextOutlined />}
+              />
+            </div>
+
+            <div>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>PRD文档路径（自动拼接）</div>
+              <Input
+                value={getPrdPath()}
+                readOnly
+                prefix={<FolderOpenOutlined />}
+                placeholder="选择父目录并输入文档名后自动生成"
+              />
+            </div>
+          </Space>
+        </Card>
+
+        <Card title={<span><FileTextOutlined /> 基础信息</span>} size="small">
+          <Space direction="vertical" style={{ width: '100%' }} size="middle">
             {/* 控制台URL */}
             <div>
               <div style={{ marginBottom: 8, fontWeight: 500 }}>
@@ -127,18 +190,6 @@ const DocGeneratorPanel: React.FC = () => {
               />
             </div>
 
-            {/* 产品名称 */}
-            <div>
-              <div style={{ marginBottom: 8, fontWeight: 500 }}>
-                产品名称 <span style={{ color: '#ff4d4f' }}>*</span>
-              </div>
-              <Input
-                placeholder="如: AIHC智能计算平台"
-                value={productName}
-                onChange={e => setProductName(e.target.value)}
-                prefix={<AppstoreOutlined />}
-              />
-            </div>
           </Space>
         </Card>
 
@@ -154,14 +205,12 @@ const DocGeneratorPanel: React.FC = () => {
                 style={{ width: '100%' }}
                 options={docTypes.map(t => ({
                   value: t.value,
-                  label: (
-                    <div>
-                      <div>{t.label}</div>
-                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>{t.description}</div>
-                    </div>
-                  ),
+                  label: t.label,
                 }))}
               />
+              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                {docTypes.find((t) => t.value === docType)?.description || ''}
+              </div>
             </div>
 
             {/* 目标受众 */}
@@ -173,14 +222,12 @@ const DocGeneratorPanel: React.FC = () => {
                 style={{ width: '100%' }}
                 options={targetAudiences.map(t => ({
                   value: t.value,
-                  label: (
-                    <div>
-                      <div>{t.label}</div>
-                      <div style={{ fontSize: 12, color: '#8c8c8c' }}>{t.description}</div>
-                    </div>
-                  ),
+                  label: t.label,
                 }))}
               />
+              <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
+                {targetAudiences.find((t) => t.value === targetAudience)?.description || ''}
+              </div>
             </div>
 
             {/* 输出格式 */}

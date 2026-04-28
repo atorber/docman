@@ -219,7 +219,7 @@ export interface PrdDimension {
 export interface GenerateDocPromptRequest {
   prdPath: string;                  // PRD文档路径
   consoleUrl: string;               // 控制台URL
-  productName: string;              // 产品名称
+  productName?: string;              // 产品名称
   docType?: '快速入门' | '操作指南' | '功能说明';  // 文档类型
   targetAudience?: '开发者' | '运维人员' | '普通用户';  // 目标受众
   outputFormat?: 'Markdown' | 'HTML';  // 输出格式
@@ -232,7 +232,7 @@ export interface GenerateDocPromptResponse {
   prompt: string;
   prdPath: string;
   prdName: string;
-  productName: string;
+  productName?: string;
   timestamp: string;
 }
 

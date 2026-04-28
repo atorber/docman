@@ -33,6 +33,11 @@ fn osstr_to_string(s: &std::ffi::OsStr) -> String {
     s.to_str().unwrap_or("").to_string()
 }
 
+/// 统一路径分隔符，避免不同平台分隔符导致匹配失败
+fn normalize_relative_path(path: &str) -> String {
+    path.replace('\\', "/")
+}
+
 /// 构建文档目录树
 pub fn build_doc_tree(work_dir: &State<WorkDirState>) -> Result<Vec<DocNode>, String> {
     let raw_path = get_raw_path(work_dir).ok_or("工作目录未设置")?;
@@ -86,6 +91,7 @@ fn build_doc_tree_recursive(
             } else if path.extension().map(|e| e == "md").unwrap_or(false) {
                 // 检查诊断历史
                 let history = get_diagnose_history(&relative_path, work_dir);
+                node.history = Some(history.clone());
                 if !history.is_empty() {
                     node.diagnose_status = Some("has-history".to_string());
                     node.last_diagnose_time = Some(history[0].timestamp.clone());
@@ -132,6 +138,7 @@ pub fn get_diagnose_history(
         _ => return vec![],
     };
 
+    let normalized_doc_path = normalize_relative_path(document_relative_path);
     let doc_name = PathBuf::from(document_relative_path)
         .file_stem()
         .map(|s| s.to_str().unwrap_or(""))
@@ -153,49 +160,57 @@ pub fn get_diagnose_history(
     {
         let file_name = osstr_to_string(entry.file_name());
         let base_name = file_name.replace("_timeline.json", "");
-        
-        // 检查是否匹配当前文档
-        let pattern = format!("{}_", doc_name);
-        if base_name.starts_with(&pattern) {
-            if let Ok(content) = fs::read_to_string(entry.path()) {
-                if let Ok(timeline) = serde_json::from_str::<TimelineData>(&content) {
-                    let base_dir = get_work_dir(work_dir);
-                    let report_path = base_dir.as_ref()
-                        .map(|d| {
-                            d.join(&timeline.outputs.report)
-                                .to_str()
-                                .unwrap_or("")
-                                .to_string()
-                        })
-                        .unwrap_or_default();
-                    let fixed_doc_path = base_dir.as_ref()
-                        .map(|d| {
-                            d.join(&timeline.outputs.fixed_doc)
-                                .to_str()
-                                .unwrap_or("")
-                                .to_string()
-                        })
-                        .unwrap_or_default();
 
-                    records.push(DiagnoseRecord {
-                        timestamp: timeline.start_time.split('.').next().unwrap_or(&timeline.start_time).replace('T', " "),
-                        document_path: document_relative_path.to_string(),
-                        document_name: PathBuf::from(document_relative_path)
-                            .file_name()
-                            .map(|s| s.to_str().unwrap_or(""))
-                            .unwrap_or("")
-                            .to_string(),
-                        status: timeline.status,
-                        total_issues: timeline.summary.total_issues,
-                        high_priority: timeline.summary.by_severity.high,
-                        medium_priority: timeline.summary.by_severity.medium,
-                        low_priority: timeline.summary.by_severity.low,
-                        report_path,
-                        timeline_path: entry.path().to_str().unwrap_or("").to_string(),
-                        fixed_doc_path,
-                        duration_seconds: Some(timeline.duration_seconds),
-                    });
+        if let Ok(content) = fs::read_to_string(entry.path()) {
+            if let Ok(timeline) = serde_json::from_str::<TimelineData>(&content) {
+                // 优先按 timeline 中记录的文档相对路径精确匹配
+                let timeline_doc_path = normalize_relative_path(&timeline.document.path);
+                let path_matched = timeline_doc_path == normalized_doc_path;
+
+                // 兜底：兼容仅靠文件名匹配的历史数据
+                let pattern = format!("{}_", doc_name);
+                let legacy_name_matched = base_name.starts_with(&pattern);
+
+                if !(path_matched || legacy_name_matched) {
+                    continue;
                 }
+
+                let base_dir = get_work_dir(work_dir);
+                let report_path = base_dir.as_ref()
+                    .map(|d| {
+                        d.join(&timeline.outputs.report)
+                            .to_str()
+                            .unwrap_or("")
+                            .to_string()
+                    })
+                    .unwrap_or_default();
+                let fixed_doc_path = base_dir.as_ref()
+                    .map(|d| {
+                        d.join(&timeline.outputs.fixed_doc)
+                            .to_str()
+                            .unwrap_or("")
+                            .to_string()
+                    })
+                    .unwrap_or_default();
+
+                records.push(DiagnoseRecord {
+                    timestamp: timeline.start_time.split('.').next().unwrap_or(&timeline.start_time).replace('T', " "),
+                    document_path: document_relative_path.to_string(),
+                    document_name: PathBuf::from(document_relative_path)
+                        .file_name()
+                        .map(|s| s.to_str().unwrap_or(""))
+                        .unwrap_or("")
+                        .to_string(),
+                    status: timeline.status,
+                    total_issues: timeline.summary.total_issues,
+                    high_priority: timeline.summary.by_severity.high,
+                    medium_priority: timeline.summary.by_severity.medium,
+                    low_priority: timeline.summary.by_severity.low,
+                    report_path,
+                    timeline_path: entry.path().to_str().unwrap_or("").to_string(),
+                    fixed_doc_path,
+                    duration_seconds: Some(timeline.duration_seconds),
+                });
             }
         }
     }

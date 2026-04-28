@@ -241,7 +241,7 @@ export interface GeneratePrdPromptRequest {
 export interface GenerateDocPromptRequest {
   prdPath: string;
   consoleUrl: string;
-  productName: string;
+  productName?: string;
   docType?: '快速入门' | '操作指南' | '功能说明';
   targetAudience?: '开发者' | '运维人员' | '普通用户';
   outputFormat?: 'Markdown' | 'HTML';
@@ -254,7 +254,7 @@ export interface GenerateDocPromptResponse {
   prompt: string;
   prdPath: string;
   prdName: string;
-  productName: string;
+  productName?: string;
   timestamp: string;
 }
 

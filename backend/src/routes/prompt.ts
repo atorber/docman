@@ -45,10 +45,6 @@ router.post('/generate-doc', (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: '缺少控制台URL' });
     }
 
-    if (!request.productName) {
-      return res.status(400).json({ success: false, error: '缺少产品名称' });
-    }
-
     const result = generateDocPrompt(request);
     res.json({ success: true, data: result });
   } catch (error) {
@@ -86,10 +82,6 @@ router.post('/generate-prd', (req: Request, res: Response) => {
 
     if (!request.type) {
       return res.status(400).json({ success: false, error: '缺少需求类型' });
-    }
-
-    if (!request.productName) {
-      return res.status(400).json({ success: false, error: '缺少产品名称' });
     }
 
     if (!request.title) {

@@ -83,7 +83,7 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   const { 
     prdPath, 
     consoleUrl, 
-    productName, 
+    productName = '', 
     docType = '操作指南', 
     targetAudience = '普通用户',
     outputFormat = 'Markdown',
@@ -101,7 +101,9 @@ export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDo
   prompt += `## 输入信息\n`;
   prompt += `- PRD文档路径: ${prdPath}\n`;
   prompt += `- 控制台URL: ${consoleUrl}\n`;
-  prompt += `- 产品名称: ${productName}\n`;
+  if (productName) {
+    prompt += `- 产品名称: ${productName}\n`;
+  }
   prompt += `- 文档类型: ${docType}\n`;
   prompt += `- 目标受众: ${targetAudience}\n`;
   prompt += `- 输出格式: ${outputFormat}\n`;
@@ -162,7 +164,9 @@ export const generatePrdGenPrompt = (request: GeneratePrdGenPromptRequest): Gene
   prompt += `# PRD生成任务\n\n`;
   prompt += `## 输入信息\n`;
   prompt += `- 需求类型: ${type}\n`;
-  prompt += `- 产品名称: ${productName}\n`;
+  if (productName) {
+    prompt += `- 产品名称: ${productName}\n`;
+  }
   prompt += `- 需求标题: ${title}\n`;
   prompt += `- 需求描述: ${description}\n`;
 

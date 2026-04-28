@@ -487,7 +487,7 @@ const Home: React.FC = () => {
       label: <span><HistoryOutlined /> 诊断历史</span>,
       children: (
         <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-          <HistoryList documentPath={selectedDoc?.relativePath || ''} onSelectRecord={handleSelectRecord} selectedRecord={selectedRecord} />
+          <HistoryList documentPath={selectedDoc?.relativePath || ''} workDirectory={workDir} onSelectRecord={handleSelectRecord} selectedRecord={selectedRecord} />
           {selectedRecord && (
             <div style={{ flex: 1, marginTop: 16, overflow: 'auto' }}>
               <Tabs
