@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSearchParams, useNavigate, useLocation } from 'react-router-dom';
-import { Layout, Button, Space, message, Tabs, Spin, Card, Tag, Empty, Menu, Table } from 'antd';
+import { Layout, Button, Space, message, Tabs, Spin, Card, Tag, Empty, Table } from 'antd';
 import { FileTextOutlined, HistoryOutlined, FileSearchOutlined, CopyOutlined, EditOutlined, FileAddOutlined, DashboardOutlined, EyeOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,10 +9,13 @@ import * as Diff from 'diff';
 import DocTree from '../components/DocTree';
 import HistoryList from '../components/HistoryList';
 import PromptPanel from '../components/PromptPanel';
+import DocGeneratorPanel from '../components/DocGeneratorPanel';
+import PrdGeneratorPanel from '../components/PrdGeneratorPanel';
+import MainNavHeader, { MainNavKey } from '../components/MainNavHeader';
 import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree, saveFixedDoc } from '../services/api';
 import { DocNode, DiagnoseRecord, TimelineData } from '../types';
 
-const { Header, Sider, Content } = Layout;
+const { Sider, Content } = Layout;
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
@@ -40,12 +43,20 @@ const Home: React.FC = () => {
   const [editContent, setEditContent] = useState('');
   const [isPreviewing, setIsPreviewing] = useState(false);
 
-  // currentNav 从URL路径派生（只读）
-  const currentNav = location.pathname === '/records' ? 'records' : 'diagnose';
-
-  // URL同步：使用react-router的searchParams
+  // URL同步：使用 react-router 的 searchParams
   const docPath = searchParams.get('doc') || undefined;
   const recordPath = searchParams.get('record') || undefined;
+  const navQuery = searchParams.get('nav');
+
+  // 主导航：Home 仅挂载在 /、/diagnose、/records、/docgen；PRD 生成通过 ?nav=prdgen（与 PrdGenPage 重定向一致）
+  const currentNav: 'diagnose' | 'records' | 'docgen' | 'prdgen' =
+    location.pathname === '/records'
+      ? 'records'
+      : location.pathname === '/docgen'
+        ? 'docgen'
+        : (location.pathname === '/' || location.pathname === '/diagnose') && navQuery === 'prdgen'
+          ? 'prdgen'
+          : 'diagnose';
 
   // 更新URL参数
   const updateUrl = (doc?: DocNode, record?: DiagnoseRecord) => {
@@ -707,20 +718,6 @@ const Home: React.FC = () => {
     navigate(`/?${params.toString()}`, { replace: true });
   };
 
-  const navItems = [
-    { key: 'diagnose', label: '文档诊断' },
-    { key: 'records', label: '最近记录' },
-  ];
-
-  const handleNavChange = (key: 'diagnose' | 'records') => {
-    // 主TAB切换时使用独立根路由，不继承上一页的查询参数
-    if (key === 'diagnose') {
-      navigate('/', { replace: true });
-    } else {
-      navigate('/records', { replace: true });
-    }
-  };
-
   const handleTabChange = (key: string) => {
     setActiveTab(key);
     // Tab切换时更新URL
@@ -811,16 +808,7 @@ const Home: React.FC = () => {
           </div>
         </div>
       )}
-      <Header style={{ background: '#fff', padding: '0 24px', borderBottom: '1px solid #f0f0f0', display: 'flex', alignItems: 'center', gap: 24 }}>
-        <h2 style={{ margin: 0, lineHeight: '64px' }}>DocMan</h2>
-        <Menu
-          mode="horizontal"
-          selectedKeys={[currentNav]}
-          onClick={(e) => handleNavChange(e.key as 'diagnose' | 'records')}
-          items={navItems}
-          style={{ flex: 1, borderBottom: 'none' }}
-        />
-      </Header>
+      <MainNavHeader selectedKey={currentNav as MainNavKey} />
       <Layout>
         {currentNav === 'diagnose' && (
           <>
@@ -843,6 +831,16 @@ const Home: React.FC = () => {
               />
             </Content>
           </>
+        )}
+        {currentNav === 'docgen' && (
+          <Content style={{ background: '#fff', overflow: 'hidden' }}>
+            <DocGeneratorPanel />
+          </Content>
+        )}
+        {currentNav === 'prdgen' && (
+          <Content style={{ background: '#fff', overflow: 'hidden' }}>
+            <PrdGeneratorPanel />
+          </Content>
         )}
         {currentNav === 'records' && (
           <Content style={{ background: '#fff', padding: 24, overflow: 'auto' }}>

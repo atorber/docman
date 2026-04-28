@@ -1,4 +1,4 @@
-import { GeneratePromptRequest, GeneratePromptResponse } from '../types';
+import { GeneratePromptRequest, GeneratePromptResponse, GenerateDocPromptRequest, GenerateDocPromptResponse, GeneratePrdGenPromptRequest, GeneratePrdGenPromptResponse, DOC_TYPES, TARGET_AUDIENCES, REQUIREMENT_TYPES } from '../types';
 
 // 生成调用skill的诊断指令
 export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptResponse => {
@@ -77,3 +77,132 @@ export const getDimensions = () => [
   { id: 17, name: '命名不规范', description: '文件名规范、标题命名一致' },
   { id: 18, name: '文档完整性', description: '必要章节、目录结构' },
 ];
+
+// 生成帮助文档生成的指令
+export const generateDocPrompt = (request: GenerateDocPromptRequest): GenerateDocPromptResponse => {
+  const { 
+    prdPath, 
+    consoleUrl, 
+    productName, 
+    docType = '操作指南', 
+    targetAudience = '普通用户',
+    outputFormat = 'Markdown',
+    useLoggedInBrowser,
+    showBrowserUI 
+  } = request;
+
+  const prdName = prdPath.split('/').pop() || prdPath;
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+
+  // 构建调用skill的指令
+  let prompt = `请使用当前工作目录的「doc-generator」skill执行以下帮助文档生成任务。\n\n`;
+  prompt += `# 帮助文档生成\n\n`;
+  prompt += `## 输入信息\n`;
+  prompt += `- PRD文档路径: ${prdPath}\n`;
+  prompt += `- 控制台URL: ${consoleUrl}\n`;
+  prompt += `- 产品名称: ${productName}\n`;
+  prompt += `- 文档类型: ${docType}\n`;
+  prompt += `- 目标受众: ${targetAudience}\n`;
+  prompt += `- 输出格式: ${outputFormat}\n`;
+
+  // 添加浏览器配置
+  if (useLoggedInBrowser) {
+    prompt += `- 使用已登录浏览器: 是\n`;
+    prompt += `- 浏览器模式: 保持窗口（reuse-existing-window）\n`;
+  }
+
+  if (showBrowserUI) {
+    prompt += `- 显示浏览器界面: 是\n`;
+  }
+
+  prompt += `\n`;
+  prompt += `## 输出配置\n`;
+  prompt += `- 时间戳: ${timestamp}\n\n`;
+  prompt += `请按照「doc-generator」skill中的「执行流程」完成文档生成任务。`;
+
+  return {
+    prompt,
+    prdPath,
+    prdName,
+    productName,
+    timestamp,
+  };
+};
+
+// 获取文档类型选项
+export const getDocTypes = () => DOC_TYPES;
+
+// 获取目标受众选项
+export const getTargetAudiences = () => TARGET_AUDIENCES;
+
+// 生成PRD生成的指令
+export const generatePrdGenPrompt = (request: GeneratePrdGenPromptRequest): GeneratePrdGenPromptResponse => {
+  const {
+    type,
+    productName,
+    title,
+    initialPrdPath,
+    description,
+    userPersona,
+    competitiveLinks,
+    referenceDocs,
+    outputPath
+  } = request;
+
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+
+  // 默认输出路径
+  const defaultOutputPath = `prd/${title}_PRD_${timestamp}.md`;
+  const finalOutputPath = outputPath || defaultOutputPath;
+
+  // 构建调用skill的指令
+  let prompt = `请使用当前工作目录的「prd-generator」skill执行以下PRD生成任务。\n\n`;
+  prompt += `# PRD生成任务\n\n`;
+  prompt += `## 输入信息\n`;
+  prompt += `- 需求类型: ${type}\n`;
+  prompt += `- 产品名称: ${productName}\n`;
+  prompt += `- 需求标题: ${title}\n`;
+  prompt += `- 需求描述: ${description}\n`;
+
+  if (initialPrdPath) {
+    prompt += `- 初始PRD路径: ${initialPrdPath}\n`;
+  }
+
+  if (userPersona) {
+    prompt += `- 用户画像: ${userPersona}\n`;
+  }
+
+  if (competitiveLinks && competitiveLinks.length > 0) {
+    prompt += `- 竞品链接:\n`;
+    competitiveLinks.forEach(link => {
+      prompt += `  - ${link}\n`;
+    });
+  }
+
+  if (referenceDocs && referenceDocs.length > 0) {
+    prompt += `- 参考文档:\n`;
+    referenceDocs.forEach(doc => {
+      prompt += `  - ${doc}\n`;
+    });
+  }
+
+  prompt += `- 输出路径: ${finalOutputPath}\n`;
+
+  prompt += `\n`;
+  prompt += `## 输出配置\n`;
+  prompt += `- 时间戳: ${timestamp}\n\n`;
+  prompt += `请按照「prd-generator」skill中的「执行流程」完成PRD生成任务。`;
+  prompt += `\n\n注意：在生成过程中，如遇到需要澄清的信息，请使用ask_user_question工具与用户确认。`;
+
+  return {
+    prompt,
+    productName,
+    title,
+    timestamp,
+  };
+};
+
+// 获取PRD生成选项
+export const getRequirementTypes = () => REQUIREMENT_TYPES;

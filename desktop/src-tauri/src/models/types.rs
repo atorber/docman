@@ -41,7 +41,6 @@ pub struct DiagnoseRecord {
 
 /// Timeline JSON 结构
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "camelCase")]
 pub struct TimelineData {
     pub task_id: String,
     pub document: DocumentInfo,

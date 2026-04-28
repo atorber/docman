@@ -1,2 +1,5 @@
 backend/node_modules/*
 web/node_modules/*
+desktop/node_modules/*
+desktop/src-tauri/target/*
+backend/dist/*

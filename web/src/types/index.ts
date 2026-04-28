@@ -113,3 +113,191 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string;
 }
+
+// ========== PRD评审相关类型 ==========
+
+// PRD文档树节点
+export interface PrdDocNode {
+  name: string;
+  path: string;
+  relativePath: string;
+  type: 'file' | 'directory';
+  children?: PrdDocNode[];
+  reviewStatus?: 'none' | 'has-history';
+  lastReviewTime?: string;
+  history?: PrdReviewRecord[];
+}
+
+// PRD评审历史记录
+export interface PrdReviewRecord {
+  timestamp: string;
+  documentPath: string;
+  documentName: string;
+  status: 'completed' | 'failed' | 'partial';
+  totalIssues: number;
+  highPriority: number;
+  mediumPriority: number;
+  lowPriority: number;
+  reportPath: string;
+  timelinePath: string;
+  conclusion: '通过' | '有条件通过' | '不通过';
+  durationSeconds?: number;
+  doc?: PrdDocNode;
+}
+
+// PRD评审维度
+export interface PrdDimension {
+  id: string;
+  name: string;
+  perspective: string;
+  perspectiveName: string;
+  description: string;
+  checkPoints: string[];
+  priority: 'high' | 'medium' | 'low';
+}
+
+// PRD评审视角
+export interface PrdPerspective {
+  id: string;
+  name: string;
+  dimensionCount: number;
+}
+
+// PRD评审Timeline
+export interface PrdTimelineData {
+  task_id: string;
+  document: {
+    name: string;
+    path: string;
+  };
+  start_time: string;
+  end_time: string;
+  duration_seconds: number;
+  status: 'completed' | 'failed' | 'partial';
+  perspectives: PerspectiveRecord[];
+  summary: {
+    total_issues: number;
+    by_severity: {
+      high: number;
+      medium: number;
+      low: number;
+    };
+    by_perspective: Record<string, number>;
+    conclusion: '通过' | '有条件通过' | '不通过';
+    blockers: number;
+    important: number;
+    minor: number;
+  };
+  outputs: {
+    report: string;
+    timeline: string;
+  };
+  errors: TimelineError[];
+}
+
+export interface PerspectiveRecord {
+  id: string;
+  name: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  dimensions: DimensionIssueRecord[];
+  summary: {
+    total_issues: number;
+    by_severity: {
+      high: number;
+      medium: number;
+      low: number;
+    };
+    status: string;
+  };
+}
+
+export interface DimensionIssueRecord {
+  id: string;
+  name: string;
+  status: 'completed' | 'failed';
+  issue_count: number;
+  issues: IssueItemRecord[];
+}
+
+export interface IssueItemRecord {
+  severity: 'high' | 'medium' | 'low';
+  description: string;
+  location: string;
+}
+
+// PRD评审Prompt请求
+export interface GeneratePrdPromptRequest {
+  documentPath: string;
+  perspectives?: string[];
+  focusDimensions?: string[];
+  projectBackground?: string;
+  techStack?: string;
+  customRequirements?: string;
+}
+
+// ========== 帮助文档生成相关类型 ==========
+
+// 帮助文档生成Prompt请求
+export interface GenerateDocPromptRequest {
+  prdPath: string;
+  consoleUrl: string;
+  productName: string;
+  docType?: '快速入门' | '操作指南' | '功能说明';
+  targetAudience?: '开发者' | '运维人员' | '普通用户';
+  outputFormat?: 'Markdown' | 'HTML';
+  useLoggedInBrowser?: boolean;
+  showBrowserUI?: boolean;
+}
+
+// 帮助文档生成Prompt响应
+export interface GenerateDocPromptResponse {
+  prompt: string;
+  prdPath: string;
+  prdName: string;
+  productName: string;
+  timestamp: string;
+}
+
+// 文档类型选项
+export interface DocTypeOption {
+  value: string;
+  label: string;
+  description: string;
+}
+
+// 目标受众选项
+export interface TargetAudienceOption {
+  value: string;
+  label: string;
+  description: string;
+}
+
+// ========== PRD生成相关类型 ==========
+
+// PRD生成Prompt请求
+export interface GeneratePrdGenPromptRequest {
+  type: '新功能' | '功能优化' | '重构' | '修复';
+  productName: string;
+  title: string;
+  initialPrdPath?: string;
+  description: string;
+  userPersona?: string;
+  competitiveLinks?: string[];
+  referenceDocs?: string[];
+  outputPath?: string;
+}
+
+// PRD生成Prompt响应
+export interface GeneratePrdGenPromptResponse {
+  prompt: string;
+  productName: string;
+  title: string;
+  timestamp: string;
+}
+
+// 需求类型选项
+export interface RequirementTypeOption {
+  value: string;
+  label: string;
+  description: string;
+}

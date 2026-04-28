@@ -22,43 +22,75 @@ export const readDocument = (relativePath: string): string => {
 
 // 构建文档目录树
 export const buildDocTree = (relativePath: string = ''): DocNode[] => {
-  const fullPath = path.join(getRawPath(), relativePath);
-  const items = fs.readdirSync(fullPath);
+  const rawRoot = getRawPath();
+  const fullPath = path.join(rawRoot, relativePath);
 
-  return items
-    .filter(item => !item.startsWith('.'))
-    .sort((a, b) => {
-      const aIsDir = fs.statSync(path.join(fullPath, a)).isDirectory();
-      const bIsDir = fs.statSync(path.join(fullPath, b)).isDirectory();
-      if (aIsDir && !bIsDir) return -1;
-      if (!aIsDir && bIsDir) return 1;
-      return a.localeCompare(b);
-    })
-    .map(item => {
+  if (!fs.existsSync(rawRoot)) {
+    console.warn('[buildDocTree] raw 目录不存在:', rawRoot);
+    return [];
+  }
+
+  let items: string[];
+  try {
+    items = fs.readdirSync(fullPath);
+  } catch (e) {
+    console.error('[buildDocTree] 无法读取目录:', fullPath, e);
+    return [];
+  }
+
+  const sortable = items
+    .filter((item) => !item.startsWith('.'))
+    .map((item) => {
       const itemPath = path.join(fullPath, item);
-      const itemRelativePath = path.join(relativePath, item);
-      const isDirectory = fs.statSync(itemPath).isDirectory();
+      try {
+        const isDirectory = fs.statSync(itemPath).isDirectory();
+        return { item, itemPath, isDirectory };
+      } catch (e) {
+        console.warn('[buildDocTree] 跳过无法访问的项:', itemPath, e);
+        return null;
+      }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null)
+    .sort((a, b) => {
+      if (a.isDirectory && !b.isDirectory) return -1;
+      if (!a.isDirectory && b.isDirectory) return 1;
+      return a.item.localeCompare(b.item);
+    });
 
-      const node: DocNode = {
-        name: item,
-        path: itemPath,
-        relativePath: itemRelativePath,
-        type: isDirectory ? 'directory' : 'file',
-      };
+  const nodes: DocNode[] = [];
+  for (const { item, itemPath, isDirectory } of sortable) {
+    const itemRelativePath = path.join(relativePath, item);
 
+    const node: DocNode = {
+      name: item,
+      path: itemPath,
+      relativePath: itemRelativePath,
+      type: isDirectory ? 'directory' : 'file',
+    };
+
+    try {
       if (isDirectory) {
         node.children = buildDocTree(itemRelativePath);
       } else {
-        // 检查是否有诊断历史
         const history = getDiagnoseHistory(itemRelativePath);
         node.diagnoseStatus = history.length > 0 ? 'has-history' : 'none';
         if (history.length > 0) {
           node.lastDiagnoseTime = history[0].timestamp;
         }
       }
+    } catch (e) {
+      console.error('[buildDocTree] 处理节点失败:', itemRelativePath, e);
+      if (!isDirectory) {
+        node.diagnoseStatus = 'none';
+      } else {
+        node.children = [];
+      }
+    }
 
-      return node;
-    });
+    nodes.push(node);
+  }
+
+  return nodes;
 };
 
 // 获取指定文档的诊断历史
@@ -79,10 +111,23 @@ export const getDiagnoseHistory = (documentRelativePath: string): DiagnoseRecord
   const traverseDir = (dir: string) => {
     if (!fs.existsSync(dir)) return;
 
-    const items = fs.readdirSync(dir);
+    let items: string[];
+    try {
+      items = fs.readdirSync(dir);
+    } catch (e) {
+      console.warn('[getDiagnoseHistory] 无法读取目录:', dir, e);
+      return;
+    }
+
     for (const item of items) {
       const itemPath = path.join(dir, item);
-      const stat = fs.statSync(itemPath);
+      let stat: fs.Stats;
+      try {
+        stat = fs.statSync(itemPath);
+      } catch (e) {
+        console.warn('[getDiagnoseHistory] 跳过无法 stat 的项:', itemPath, e);
+        continue;
+      }
 
       if (stat.isDirectory()) {
         traverseDir(itemPath);
@@ -95,24 +140,29 @@ export const getDiagnoseHistory = (documentRelativePath: string): DiagnoseRecord
           try {
             const content = fs.readFileSync(itemPath, 'utf-8');
             const timeline: TimelineData = JSON.parse(content);
+            const summary = timeline.summary;
+            const outputs = timeline.outputs;
+            if (!summary?.by_severity || !outputs) {
+              console.warn('[getDiagnoseHistory] timeline 缺少 summary/outputs，跳过:', itemPath);
+              continue;
+            }
 
-            // 将相对路径转换为绝对路径
-            const reportPath = timeline.outputs.report
-              ? path.join(BASE_DIR, timeline.outputs.report)
+            const reportPath = outputs.report
+              ? path.join(BASE_DIR, outputs.report)
               : '';
-            const fixedDocPath = timeline.outputs.fixed_doc
-              ? path.join(BASE_DIR, timeline.outputs.fixed_doc)
+            const fixedDocPath = outputs.fixed_doc
+              ? path.join(BASE_DIR, outputs.fixed_doc)
               : '';
 
             records.push({
-              timestamp: timeline.start_time.replace('T', ' ').split('.')[0],
+              timestamp: (timeline.start_time || '').replace('T', ' ').split('.')[0],
               documentPath: documentRelativePath,
               documentName: path.basename(documentRelativePath),
               status: timeline.status,
-              totalIssues: timeline.summary.total_issues,
-              highPriority: timeline.summary.by_severity.high,
-              mediumPriority: timeline.summary.by_severity.medium,
-              lowPriority: timeline.summary.by_severity.low,
+              totalIssues: summary.total_issues ?? 0,
+              highPriority: summary.by_severity.high ?? 0,
+              mediumPriority: summary.by_severity.medium ?? 0,
+              lowPriority: summary.by_severity.low ?? 0,
               reportPath,
               timelinePath: itemPath,
               fixedDocPath,

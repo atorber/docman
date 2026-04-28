@@ -1,7 +1,7 @@
 {
   "name": "doc-diagnose-backend",
   "version": "1.0.0",
-  "description": "文档诊断工具后端服务",
+  "description": "文档全能助手后端服务",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",

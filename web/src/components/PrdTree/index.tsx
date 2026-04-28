@@ -2,16 +2,16 @@ import React, { useState, useEffect } from 'react';
 import type { Key } from 'react';
 import { Tree, Empty, Spin, Input } from 'antd';
 import { FolderOutlined, FileTextOutlined } from '@ant-design/icons';
-import { DocNode } from '../../types';
-import { getDocTree } from '../../services/api';
+import { PrdDocNode } from '../../types';
+import { getPrdDocTree } from '../../services/api';
 
-interface DocTreeProps {
-  onSelectDoc: (node: DocNode) => void;
+interface PrdTreeProps {
+  onSelectDoc: (node: PrdDocNode) => void;
   selectedDocPath?: string;
   defaultSelectFirst?: boolean;
 }
 
-const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, defaultSelectFirst = false }) => {
+const PrdTree: React.FC<PrdTreeProps> = ({ onSelectDoc, selectedDocPath, defaultSelectFirst = false }) => {
   const [loading, setLoading] = useState(false);
   const [treeData, setTreeData] = useState<any[]>([]);
   const [searchValue, setSearchValue] = useState('');
@@ -23,11 +23,9 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
     loadTree();
   }, []);
 
-  // 外部传入 selectedDocPath 时，自动选中并展开父节点
   useEffect(() => {
     if (selectedDocPath) {
       setSelectedKeys([selectedDocPath]);
-      // 展开所有父目录
       const parts = selectedDocPath.split('/');
       const parentKeys: string[] = [];
       let current = '';
@@ -42,9 +40,9 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
   const loadTree = async () => {
     try {
       setLoading(true);
-      const data = await getDocTree();
+      const data = await getPrdDocTree();
 
-      const transformToAntdTree = (nodes: DocNode[]): any[] => {
+      const transformToAntdTree = (nodes: PrdDocNode[]): any[] => {
         if (!nodes || nodes.length === 0) return [];
 
         return nodes.map((node) => {
@@ -69,11 +67,11 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
                 }}
               >
                 {node.type === 'directory' ? (
-                  <FolderOutlined style={{ color: '#1890ff', marginRight: 8 }} />
+                  <FolderOutlined style={{ color: '#722ed1', marginRight: 8 }} />
                 ) : (
                   <FileTextOutlined
                     style={{
-                      color: node.diagnoseStatus === 'has-history' ? '#52c41a' : '#8c8c8c',
+                      color: node.reviewStatus === 'has-history' ? '#52c41a' : '#8c8c8c',
                       marginRight: 8
                     }}
                   />
@@ -96,7 +94,7 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
               ? <FolderOutlined />
               : <FileTextOutlined
                   style={{
-                    color: node.diagnoseStatus === 'has-history' ? '#52c41a' : '#8c8c8c'
+                    color: node.reviewStatus === 'has-history' ? '#52c41a' : '#8c8c8c'
                   }}
                 />,
             isLeaf: node.type === 'file',
@@ -110,7 +108,6 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
       setTreeData(transformedData);
 
       if (selectedDocPath) {
-        // 有外部指定文档，展开其父目录并选中，同时通知父组件加载内容
         const parts = selectedDocPath.split('/');
         const parentKeys: string[] = [];
         let current = '';
@@ -126,10 +123,8 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
           relativePath: selectedDocPath,
           type: 'file',
         });
-      } else if (defaultSelectFirst && !firstLoaded) {
-        // 默认收起所有节点
+      } else if (defaultSelectFirst && !firstLoaded && transformedData.length > 0) {
         setExpandedKeys([]);
-        // 默认选中第一个文件
         const findFirstFile = (nodes: any[]): any => {
           for (const node of nodes) {
             if (node.isLeaf) return node;
@@ -154,7 +149,7 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
       }
 
     } catch (error) {
-      console.error('Failed to load doc tree:', error);
+      console.error('Failed to load PRD doc tree:', error);
     } finally {
       setLoading(false);
     }
@@ -180,12 +175,10 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
     return result;
   };
 
-  // 处理展开/收起 - 使用onExpand事件
   const handleExpand = (keys: Key[]) => {
     setExpandedKeys(keys.map((k) => String(k)));
   };
 
-  // 处理选中 - 只处理文件节点
   const handleSelect = (keys: Key[], info: { node: any }) => {
     const node = info.node;
     if (node.isLeaf) {
@@ -208,7 +201,7 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
   }
 
   if (treeData.length === 0) {
-    return <Empty description="暂无文档" />;
+    return <Empty description="暂无PRD文档，请在 prd/ 目录下添加文档" />;
   }
 
   const displayData = searchValue ? filterTree(treeData, searchValue) : treeData;
@@ -216,7 +209,7 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       <Input.Search
-        placeholder="搜索文档..."
+        placeholder="搜索PRD文档..."
         style={{ marginBottom: 12 }}
         onChange={(e) => setSearchValue(e.target.value)}
         allowClear
@@ -247,4 +240,4 @@ const DocTree: React.FC<DocTreeProps> = ({ onSelectDoc, selectedDocPath, default
   );
 };
 
-export default DocTree;
+export default PrdTree;
