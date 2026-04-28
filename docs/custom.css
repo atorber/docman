@@ -1,0 +1,80 @@
+.homepage-hero {
+  background: linear-gradient(135deg, #1677ff 0%, #36cfc9 100%);
+  color: #fff;
+  padding: 28px 24px;
+  border-radius: 14px;
+  margin: 8px 0 18px;
+}
+
+.homepage-hero h1,
+.homepage-hero h2,
+.homepage-hero p {
+  color: #fff !important;
+  margin: 0 0 12px !important;
+}
+
+.hero-badges {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.hero-badges span {
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.section-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+  margin: 12px 0 18px;
+}
+
+.section-card {
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.section-card h4 {
+  margin: 0 0 8px;
+}
+
+.cta-box {
+  margin-top: 18px;
+  border: 1px solid #e6f4ff;
+  border-radius: 12px;
+  background: #f7fbff;
+  padding: 18px 16px;
+}
+
+.cta-btns {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+}
+
+.cta-btn {
+  display: inline-block;
+  padding: 8px 14px;
+  border-radius: 8px;
+  text-decoration: none !important;
+}
+
+.cta-btn-primary {
+  background: #1677ff;
+  color: #fff !important;
+}
+
+.cta-btn-secondary {
+  border: 1px solid #91caff;
+  color: #1677ff !important;
+  background: #fff;
+}
