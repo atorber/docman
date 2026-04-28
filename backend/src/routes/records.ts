@@ -8,16 +8,21 @@ const BASE_DIR = path.join(__dirname, '../../..');
 const TIMELINE_DIR = path.join(BASE_DIR, 'timeline');
 
 type TimelineLike = {
+  type?: string;
+  source?: string;
+  timestamp?: string;
   start_time?: string;
   status?: string;
   document?: { name?: string; path?: string };
   prd?: { name?: string; path?: string };
+  prd_source?: string;
   requirement?: { title?: string };
   perspectives?: unknown[];
   dimensions?: unknown[];
   outputs?: {
     prd_document?: string;
   };
+  output_path?: string;
 };
 
 const toAbsPath = (filePath: string): string =>
@@ -45,9 +50,17 @@ const walkTimelineFiles = (dir: string): string[] => {
 };
 
 const inferSource = (data: TimelineLike): RecentRecordItem['source'] => {
+  const normalizedType = (data.type || '').toLowerCase();
+  const normalizedSource = (data.source || '').toLowerCase();
+
+  if (normalizedType === 'docgen' || normalizedSource.includes('帮助文档生成')) return 'docgen';
+  if (normalizedType === 'prdgen' || normalizedSource.includes('prd生成')) return 'prdgen';
+  if (normalizedType === 'prdreview' || normalizedSource.includes('prd评审')) return 'prdreview';
+  if (normalizedType === 'diagnose' || normalizedSource.includes('帮助文档诊断')) return 'diagnose';
+
   if (Array.isArray(data.perspectives)) return 'prdreview';
   if (data.prd && data.requirement) return 'prdgen';
-  if (data.prd) return 'docgen';
+  if (data.prd || data.prd_source || data.output_path) return 'docgen';
   return 'diagnose';
 };
 
@@ -81,11 +94,11 @@ const buildRecentRecord = (timelinePath: string, data: TimelineLike): RecentReco
       id: timelinePath,
       source,
       sourceLabel,
-      name: data.prd?.name || path.basename(timelinePath),
-      path: data.outputs?.prd_document || data.prd?.path || '-',
-      timestamp: data.start_time || '',
+      name: data.prd?.name || path.basename(data.output_path || timelinePath),
+      path: data.output_path || data.prd_source || data.prd?.path || '-',
+      timestamp: data.timestamp || data.start_time || '',
       status: data.status,
-      docPath: data.prd?.path,
+      docPath: data.output_path?.replace(/^raw\//, '') || data.prd_source || data.prd?.path,
       timelinePath: toAbsPath(timelinePath),
     };
   }
