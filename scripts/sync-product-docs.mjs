@@ -73,6 +73,19 @@ async function buildSidebarLines(dir, relFromContent = '') {
     const subRel = path.posix.join(relFromContent.replace(/\\/g, '/'), subdir);
     const childLines = await buildSidebarLines(dir, subRel);
     if (childLines.length === 0) continue;
+    const firstChild = childLines[0];
+    const singleDirectLinkMatch =
+      childLines.length === 1
+        ? firstChild.match(/^- \[(.+)\]\((.+)\)$/)
+        : null;
+
+    if (singleDirectLinkMatch) {
+      // 目录下仅一个文档时，折叠为一级直链，减少视觉冗余
+      const link = singleDirectLinkMatch[2];
+      lines.push(`- [${toDisplayName(subdir)}](${link})`);
+      continue;
+    }
+
     lines.push(`- ${toDisplayName(subdir)}`);
     for (const line of childLines) {
       lines.push(`  ${line}`);
