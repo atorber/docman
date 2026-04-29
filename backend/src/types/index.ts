@@ -112,6 +112,8 @@ export interface GenerateResearchPromptRequest {
   documentText?: string; // 研报原始文本输入
   reportType?: '个股研究' | '行业板块研究';
   analysisPreference?: string; // 偏风险/偏机会/偏估值/偏兑现
+  /** 潜力/风险两池输出侧重，默认两者兼顾 */
+  screeningFocus?: '潜力与风险兼顾' | '偏重潜力标的' | '偏重风险警示';
   externalDataPriority?: string; // 外部数据源优先级，默认东方财富
 }
 

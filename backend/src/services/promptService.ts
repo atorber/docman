@@ -310,6 +310,7 @@ export const generateResearchPrompt = (request: GenerateResearchPromptRequest): 
     documentText,
     reportType = '个股研究',
     analysisPreference,
+    screeningFocus = '潜力与风险兼顾',
     externalDataPriority = '东方财富',
   } = request;
 
@@ -341,6 +342,7 @@ export const generateResearchPrompt = (request: GenerateResearchPromptRequest): 
   if (analysisPreference && analysisPreference.trim()) {
     prompt += `- 分析偏好: ${analysisPreference.trim()}\n`;
   }
+  prompt += `- 标的挖掘侧重点: ${screeningFocus}\n`;
   prompt += `- 外部数据优先级: ${externalDataPriority}\n\n`;
 
   prompt += `## 输出配置\n`;
@@ -349,7 +351,11 @@ export const generateResearchPrompt = (request: GenerateResearchPromptRequest): 
   prompt += `0) 严格按“报告类型=${reportType}”使用对应分析模板；\n`;
   prompt += `1) 每次都请求外部数据源并进行最近3期趋势+行业分位+事件佐证对比；\n`;
   prompt += `2) 若输入为文本则先保存到 research_reports/imported/ 再继续分析；\n`;
-  prompt += `3) 输出简洁研究报告与风险/机会要点清单。`;
+  prompt += `3) 输出简洁研究报告与风险/机会要点清单；\n`;
+  prompt += `4) 按 skill「Agent 深度研究协议」优先使用计划拆分、并行外证分包（趋势/分位/事件）、多轮联网检索后再收敛结论；\n`;
+  prompt += `5) 输出须包含「潜力跟踪池」「风险提示池」两张标的级表格（外证支撑与风险严重度须可复核，非荐股）；\n`;
+  prompt += `6) 严格执行“极简输出协议”：聚焦结论与证据、限制篇幅与条目，避免冗长背景叙述；\n`;
+  prompt += `7) 若研报涉及多家上市公司，需逐家公司分析行业地位与近期表现，并按投资价值排序给出简明理由。\n`;
 
   return {
     prompt,

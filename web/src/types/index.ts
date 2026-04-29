@@ -119,6 +119,7 @@ export interface GenerateResearchPromptRequest {
   documentText?: string;
   reportType?: '个股研究' | '行业板块研究';
   analysisPreference?: string;
+  screeningFocus?: '潜力与风险兼顾' | '偏重潜力标的' | '偏重风险警示';
   externalDataPriority?: string;
 }
 

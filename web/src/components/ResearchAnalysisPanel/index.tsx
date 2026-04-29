@@ -2,8 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { Alert, Button, Card, Input, Select, Space, message } from 'antd';
 import { CopyOutlined, PlayCircleOutlined } from '@ant-design/icons';
 import { generateResearchPrompt } from '../../services/api';
+import type { GenerateResearchPromptRequest } from '../../types';
 
 const { TextArea } = Input;
+
+type ScreeningFocus = NonNullable<GenerateResearchPromptRequest['screeningFocus']>;
 
 interface ResearchAnalysisPanelProps {
   selectedDocumentPath?: string;
@@ -16,6 +19,7 @@ const ResearchAnalysisPanel: React.FC<ResearchAnalysisPanelProps> = ({ selectedD
   const [documentText, setDocumentText] = useState('');
   const [reportType, setReportType] = useState<'个股研究' | '行业板块研究'>('个股研究');
   const [analysisPreference, setAnalysisPreference] = useState('');
+  const [screeningFocus, setScreeningFocus] = useState<ScreeningFocus>('潜力与风险兼顾');
   const [externalDataPriority, setExternalDataPriority] = useState('东方财富');
   const [generatedPrompt, setGeneratedPrompt] = useState('');
 
@@ -36,6 +40,7 @@ const ResearchAnalysisPanel: React.FC<ResearchAnalysisPanelProps> = ({ selectedD
         documentText: documentText.trim() || undefined,
         reportType,
         analysisPreference: analysisPreference.trim() || undefined,
+        screeningFocus,
         externalDataPriority,
       });
       setGeneratedPrompt(result.prompt);
@@ -67,7 +72,7 @@ const ResearchAnalysisPanel: React.FC<ResearchAnalysisPanelProps> = ({ selectedD
       <Space direction="vertical" style={{ width: '100%' }} size="middle">
         <Alert
           message="A股研报分析"
-          description="支持券商/机构研报分析。输入研报路径或直接粘贴文本，自动生成调用 cn-a-share-research-report-analysis skill 的 Prompt。"
+          description="从研报中结构化挖掘潜力跟踪线索与风险警示标的（以外证为支撑，非荐股）；输入研报路径或粘贴文本，自动生成调用 cn-a-share-research-report-analysis skill 的 Prompt。"
           type="info"
           showIcon
         />
@@ -116,6 +121,20 @@ const ResearchAnalysisPanel: React.FC<ResearchAnalysisPanelProps> = ({ selectedD
                 placeholder="如: 偏风险、偏机会、偏估值、偏业绩兑现"
                 value={analysisPreference}
                 onChange={(e) => setAnalysisPreference(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <div style={{ marginBottom: 8, fontWeight: 500 }}>标的挖掘侧重点</div>
+              <Select
+                value={screeningFocus}
+                onChange={setScreeningFocus}
+                style={{ width: '100%' }}
+                options={[
+                  { label: '潜力与风险兼顾（默认）', value: '潜力与风险兼顾' },
+                  { label: '偏重潜力标的', value: '偏重潜力标的' },
+                  { label: '偏重风险警示', value: '偏重风险警示' },
+                ]}
               />
             </div>
 
