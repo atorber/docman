@@ -550,6 +550,50 @@ const Home: React.FC = () => {
     );
   };
 
+  const renderDetailFallbackFromReport = (report: string, emptyText: string) => {
+    if (!report || report === '报告文件不存在') {
+      return <Empty description={emptyText} />;
+    }
+
+    const headingMatches = report.match(/^#{1,3}\s+.+$/gm) || [];
+    const headings = headingMatches.slice(0, 8).map((h) => h.replace(/^#{1,3}\s+/, '').trim());
+    const bullets = report
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => /^[-*]\s+/.test(line))
+      .slice(0, 10)
+      .map((line) => line.replace(/^[-*]\s+/, '').trim());
+
+    return (
+      <Card size="small" title="分析详情（报告摘要）">
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <div style={{ color: '#8c8c8c' }}>
+            未检测到结构化 timeline，已从分析报告提取摘要。
+          </div>
+          {headings.length > 0 && (
+            <div>
+              <strong>章节结构</strong>
+              <ul style={{ marginTop: 8 }}>
+                {headings.map((h, idx) => <li key={`${h}-${idx}`}>{h}</li>)}
+              </ul>
+            </div>
+          )}
+          {bullets.length > 0 && (
+            <div>
+              <strong>关键要点</strong>
+              <ul style={{ marginTop: 8 }}>
+                {bullets.map((b, idx) => <li key={`${b}-${idx}`}>{b}</li>)}
+              </ul>
+            </div>
+          )}
+          {headings.length === 0 && bullets.length === 0 && (
+            <div style={{ color: '#8c8c8c' }}>报告内容可读取，但未提取到可结构化的标题/要点。</div>
+          )}
+        </Space>
+      </Card>
+    );
+  };
+
   // Diff 对比视图渲染
   const renderDiffView = (opts?: { height?: string; showFullscreen?: boolean }) => {
     const height = opts?.height ?? 'calc(100vh - 380px)';
@@ -1149,7 +1193,9 @@ const Home: React.FC = () => {
                                     <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
                                   ) : (
                                     <div style={{ maxHeight: 'calc(100vh - 460px)', overflow: 'auto' }}>
-                                      {financeTimelineData ? renderSummary(financeTimelineData) : <Empty description="无分析详情数据" />}
+                                      {financeTimelineData
+                                        ? renderSummary(financeTimelineData)
+                                        : renderDetailFallbackFromReport(financeReportContent, '无分析详情数据')}
                                     </div>
                                   ),
                                 },
@@ -1268,7 +1314,9 @@ const Home: React.FC = () => {
                                     <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
                                   ) : (
                                     <div style={{ maxHeight: 'calc(100vh - 460px)', overflow: 'auto' }}>
-                                      {researchTimelineData ? renderSummary(researchTimelineData) : <Empty description="无分析详情数据" />}
+                                      {researchTimelineData
+                                        ? renderSummary(researchTimelineData)
+                                        : renderDetailFallbackFromReport(researchReportContent, '无分析详情数据')}
                                     </div>
                                   ),
                                 },
