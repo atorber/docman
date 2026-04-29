@@ -1,6 +1,8 @@
-# DocMan 文人
+# DocMan
 
 一个面向产品文档全生命周期的智能助手，覆盖帮助文档诊断、帮助文档生成、PRD生成与PRD多视角评审，并提供统一的最近记录聚合与详情跳转能力。
+
+去官网：[https://atorber.github.io/docman](https://atorber.github.io/docman)
 
 ## 产品介绍
 
