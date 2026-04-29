@@ -98,6 +98,23 @@ export interface GeneratePromptResponse {
   timestamp: string;
 }
 
+// 财报分析 Prompt 生成请求
+export interface GenerateFinancePromptRequest {
+  documentPath?: string; // finance_reports/ 下相对路径
+  documentText?: string; // 财报原始文本输入
+  focusPreference?: string; // 偏风险/偏机会/偏现金流等
+  externalDataPriority?: string; // 外部数据源优先级，默认东方财富
+}
+
+// 研报分析 Prompt 生成请求
+export interface GenerateResearchPromptRequest {
+  documentPath?: string; // research_reports/ 下相对路径
+  documentText?: string; // 研报原始文本输入
+  reportType?: '个股研究' | '行业板块研究';
+  analysisPreference?: string; // 偏风险/偏机会/偏估值/偏兑现
+  externalDataPriority?: string; // 外部数据源优先级，默认东方财富
+}
+
 // ========== PRD评审相关类型 ==========
 
 // PRD文档树节点
@@ -395,8 +412,8 @@ export interface PrdGenPhase {
 // 最近记录（统一聚合）
 export interface RecentRecordItem {
   id: string;
-  source: 'diagnose' | 'docgen' | 'prdgen' | 'prdreview';
-  sourceLabel: '帮助文档诊断' | '帮助文档生成' | 'PRD生成' | 'PRD评审';
+  source: 'diagnose' | 'docgen' | 'prdgen' | 'prdreview' | 'finance';
+  sourceLabel: '帮助文档诊断' | '帮助文档生成' | 'PRD生成' | 'PRD评审' | '财报分析';
   name: string;
   path: string;
   timestamp: string;

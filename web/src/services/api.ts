@@ -1,10 +1,26 @@
-import { ApiResponse, DocNode, DiagnoseRecord, TimelineData, DiagnoseDimension, GeneratePromptRequest, GeneratePromptResponse, PrdDocNode, PrdReviewRecord, PrdTimelineData, PrdDimension, PrdPerspective, GeneratePrdPromptRequest, GenerateDocPromptRequest, GenerateDocPromptResponse, DocTypeOption, TargetAudienceOption, GeneratePrdGenPromptRequest, GeneratePrdGenPromptResponse, RequirementTypeOption, RecentRecordItem } from '../types';
+import { ApiResponse, DocNode, DiagnoseRecord, TimelineData, DiagnoseDimension, GeneratePromptRequest, GeneratePromptResponse, PrdDocNode, PrdReviewRecord, PrdTimelineData, PrdDimension, PrdPerspective, GeneratePrdPromptRequest, GenerateDocPromptRequest, GenerateDocPromptResponse, DocTypeOption, TargetAudienceOption, GeneratePrdGenPromptRequest, GeneratePrdGenPromptResponse, GenerateFinancePromptRequest, GenerateResearchPromptRequest, RequirementTypeOption, RecentRecordItem } from '../types';
 
 const BASE_URL = '/api';
 
 // 获取文档目录树
 export const getDocTree = async (): Promise<DocNode[]> => {
   const res = await fetch(`${BASE_URL}/documents/tree`);
+  const data: ApiResponse<DocNode[]> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取财报目录树（finance_reports）
+export const getFinanceDocTree = async (): Promise<DocNode[]> => {
+  const res = await fetch(`${BASE_URL}/documents/finance-tree`);
+  const data: ApiResponse<DocNode[]> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取研报目录树（research_reports）
+export const getResearchDocTree = async (): Promise<DocNode[]> => {
+  const res = await fetch(`${BASE_URL}/documents/research-tree`);
   const data: ApiResponse<DocNode[]> = await res.json();
   if (!data.success) throw new Error(data.error);
   return data.data!;
@@ -18,9 +34,49 @@ export const getDocumentContent = async (path: string): Promise<string> => {
   return data.data!;
 };
 
+// 获取财报文档内容（finance_reports）
+export const getFinanceDocumentContent = async (path: string): Promise<string> => {
+  const res = await fetch(`${BASE_URL}/documents/finance-content?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<string> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取研报文档内容（research_reports）
+export const getResearchDocumentContent = async (path: string): Promise<string> => {
+  const res = await fetch(`${BASE_URL}/documents/research-content?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<string> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取财报原始文件预览地址（如 PDF）
+export const getFinanceDocumentFileUrl = (path: string): string =>
+  `${BASE_URL}/documents/finance-file?path=${encodeURIComponent(path)}`;
+
+// 获取研报原始文件预览地址（如 PDF）
+export const getResearchDocumentFileUrl = (path: string): string =>
+  `${BASE_URL}/documents/research-file?path=${encodeURIComponent(path)}`;
+
 // 获取诊断历史
 export const getDiagnoseHistory = async (path: string): Promise<DiagnoseRecord[]> => {
   const res = await fetch(`${BASE_URL}/diagnoses/history?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<DiagnoseRecord[]> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取财报分析历史
+export const getFinanceHistory = async (path: string): Promise<DiagnoseRecord[]> => {
+  const res = await fetch(`${BASE_URL}/finance/history?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<DiagnoseRecord[]> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取研报分析历史
+export const getResearchHistory = async (path: string): Promise<DiagnoseRecord[]> => {
+  const res = await fetch(`${BASE_URL}/research/history?path=${encodeURIComponent(path)}`);
   const data: ApiResponse<DiagnoseRecord[]> = await res.json();
   if (!data.success) throw new Error(data.error);
   return data.data!;
@@ -34,9 +90,41 @@ export const getTimeline = async (path: string): Promise<TimelineData> => {
   return data.data!;
 };
 
+// 获取财报分析 Timeline
+export const getFinanceTimeline = async (path: string): Promise<TimelineData> => {
+  const res = await fetch(`${BASE_URL}/finance/timeline?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<TimelineData> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取研报分析 Timeline
+export const getResearchTimeline = async (path: string): Promise<TimelineData> => {
+  const res = await fetch(`${BASE_URL}/research/timeline?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<TimelineData> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
 // 获取诊断报告
 export const getReport = async (path: string): Promise<string> => {
   const res = await fetch(`${BASE_URL}/diagnoses/report?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<string> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取财报分析报告
+export const getFinanceReport = async (path: string): Promise<string> => {
+  const res = await fetch(`${BASE_URL}/finance/report?path=${encodeURIComponent(path)}`);
+  const data: ApiResponse<string> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 获取研报分析报告
+export const getResearchReport = async (path: string): Promise<string> => {
+  const res = await fetch(`${BASE_URL}/research/report?path=${encodeURIComponent(path)}`);
   const data: ApiResponse<string> = await res.json();
   if (!data.success) throw new Error(data.error);
   return data.data!;
@@ -203,6 +291,30 @@ export const generatePrdGenPrompt = async (request: GeneratePrdGenPromptRequest)
     body: JSON.stringify(request),
   });
   const data: ApiResponse<GeneratePrdGenPromptResponse> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 生成财报分析Prompt
+export const generateFinancePrompt = async (request: GenerateFinancePromptRequest): Promise<GeneratePromptResponse> => {
+  const res = await fetch(`${BASE_URL}/prompt/generate-finance`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  const data: ApiResponse<GeneratePromptResponse> = await res.json();
+  if (!data.success) throw new Error(data.error);
+  return data.data!;
+};
+
+// 生成研报分析Prompt
+export const generateResearchPrompt = async (request: GenerateResearchPromptRequest): Promise<GeneratePromptResponse> => {
+  const res = await fetch(`${BASE_URL}/prompt/generate-research`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  });
+  const data: ApiResponse<GeneratePromptResponse> = await res.json();
   if (!data.success) throw new Error(data.error);
   return data.data!;
 };

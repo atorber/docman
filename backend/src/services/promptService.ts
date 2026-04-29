@@ -1,4 +1,4 @@
-import { GeneratePromptRequest, GeneratePromptResponse, GenerateDocPromptRequest, GenerateDocPromptResponse, GeneratePrdGenPromptRequest, GeneratePrdGenPromptResponse, DOC_TYPES, TARGET_AUDIENCES, REQUIREMENT_TYPES } from '../types';
+import { GeneratePromptRequest, GeneratePromptResponse, GenerateDocPromptRequest, GenerateDocPromptResponse, GeneratePrdGenPromptRequest, GeneratePrdGenPromptResponse, GenerateFinancePromptRequest, GenerateResearchPromptRequest, DOC_TYPES, TARGET_AUDIENCES, REQUIREMENT_TYPES } from '../types';
 
 // 生成调用skill的诊断指令
 export const generatePrompt = (request: GeneratePromptRequest): GeneratePromptResponse => {
@@ -244,6 +244,117 @@ export const generatePrdGenPrompt = (request: GeneratePrdGenPromptRequest): Gene
     prompt,
     productName,
     title,
+    timestamp,
+  };
+};
+
+// 生成财报分析指令
+export const generateFinancePrompt = (request: GenerateFinancePromptRequest): GeneratePromptResponse => {
+  const {
+    documentPath,
+    documentText,
+    focusPreference,
+    externalDataPriority = '东方财富',
+  } = request;
+
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+
+  const hasPath = typeof documentPath === 'string' && documentPath.trim().length > 0;
+  const hasText = typeof documentText === 'string' && documentText.trim().length > 0;
+  const normalizedPath = hasPath
+    ? (documentPath!.trim().startsWith('finance_reports/')
+      ? documentPath!.trim().replace(/^finance_reports\//, 'research_reports/')
+      : (documentPath!.trim().startsWith('research_reports/')
+        ? documentPath!.trim()
+        : `research_reports/${documentPath!.trim().replace(/^\/+/, '')}`))
+    : '';
+  const displayName = hasPath
+    ? normalizedPath.split('/').pop() || normalizedPath
+    : `finance_report_input_${timestamp}.md`;
+
+  let prompt = `请使用当前工作目录的「cn-a-share-financial-report-risk-opportunity」skill执行以下财报分析任务。\n\n`;
+  prompt += `# 财报分析\n\n`;
+  prompt += `## 输入信息\n`;
+  if (hasPath) {
+    prompt += `- 原始文档路径: ${normalizedPath}\n`;
+  }
+  if (hasText) {
+    prompt += `- 原始文档文本:\n`;
+    prompt += `${documentText!.trim()}\n`;
+  }
+  if (focusPreference && focusPreference.trim()) {
+    prompt += `- 关注偏好: ${focusPreference.trim()}\n`;
+  }
+  prompt += `- 外部数据优先级: ${externalDataPriority}\n\n`;
+
+  prompt += `## 输出配置\n`;
+  prompt += `- 时间戳: ${timestamp}\n\n`;
+  prompt += `请按 skill 规范完成：\n`;
+  prompt += `1) 每次都请求外部数据源并进行最近3期趋势+行业分位+事件佐证对比；\n`;
+  prompt += `2) 若输入为文本则先保存到 research_reports/imported/ 再继续分析；\n`;
+  prompt += `3) 输出简洁研究报告与风险/机会要点清单。`;
+
+  return {
+    prompt,
+    documentPath: hasPath ? normalizedPath : `research_reports/imported/${displayName}`,
+    documentName: displayName,
+    timestamp,
+  };
+};
+
+// 生成研报分析指令
+export const generateResearchPrompt = (request: GenerateResearchPromptRequest): GeneratePromptResponse => {
+  const {
+    documentPath,
+    documentText,
+    reportType = '个股研究',
+    analysisPreference,
+    externalDataPriority = '东方财富',
+  } = request;
+
+  const now = new Date();
+  const timestamp = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}${String(now.getSeconds()).padStart(2, '0')}`;
+
+  const hasPath = typeof documentPath === 'string' && documentPath.trim().length > 0;
+  const hasText = typeof documentText === 'string' && documentText.trim().length > 0;
+  const normalizedPath = hasPath
+    ? (documentPath!.trim().startsWith('research_reports/')
+      ? documentPath!.trim()
+      : `research_reports/${documentPath!.trim().replace(/^\/+/, '')}`)
+    : '';
+  const displayName = hasPath
+    ? normalizedPath.split('/').pop() || normalizedPath
+    : `research_report_input_${timestamp}.md`;
+
+  let prompt = `请使用当前工作目录的「cn-a-share-research-report-analysis」skill执行以下研报分析任务。\n\n`;
+  prompt += `# 研报分析\n\n`;
+  prompt += `## 输入信息\n`;
+  if (hasPath) {
+    prompt += `- 原始文档路径: ${normalizedPath}\n`;
+  }
+  if (hasText) {
+    prompt += `- 原始文档文本:\n`;
+    prompt += `${documentText!.trim()}\n`;
+  }
+  prompt += `- 报告类型: ${reportType}\n`;
+  if (analysisPreference && analysisPreference.trim()) {
+    prompt += `- 分析偏好: ${analysisPreference.trim()}\n`;
+  }
+  prompt += `- 外部数据优先级: ${externalDataPriority}\n\n`;
+
+  prompt += `## 输出配置\n`;
+  prompt += `- 时间戳: ${timestamp}\n\n`;
+  prompt += `请按 skill 规范完成：\n`;
+  prompt += `0) 严格按“报告类型=${reportType}”使用对应分析模板；\n`;
+  prompt += `1) 每次都请求外部数据源并进行最近3期趋势+行业分位+事件佐证对比；\n`;
+  prompt += `2) 若输入为文本则先保存到 research_reports/imported/ 再继续分析；\n`;
+  prompt += `3) 输出简洁研究报告与风险/机会要点清单。`;
+
+  return {
+    prompt,
+    documentPath: hasPath ? normalizedPath : `research_reports/imported/${displayName}`,
+    documentName: displayName,
     timestamp,
   };
 };

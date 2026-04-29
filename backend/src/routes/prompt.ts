@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
-import { generatePrompt, getDimensions, generateDocPrompt, getDocTypes, getTargetAudiences, generatePrdGenPrompt, getRequirementTypes } from '../services/promptService';
-import { GeneratePromptRequest, GenerateDocPromptRequest, GeneratePrdGenPromptRequest } from '../types';
+import { generatePrompt, getDimensions, generateDocPrompt, getDocTypes, getTargetAudiences, generatePrdGenPrompt, getRequirementTypes, generateFinancePrompt, generateResearchPrompt } from '../services/promptService';
+import { GeneratePromptRequest, GenerateDocPromptRequest, GeneratePrdGenPromptRequest, GenerateFinancePromptRequest, GenerateResearchPromptRequest } from '../types';
 
 const router = Router();
 
@@ -105,6 +105,44 @@ router.post('/generate-prd', (req: Request, res: Response) => {
   } catch (error) {
     console.error('Failed to generate PRD prompt:', error);
     res.status(500).json({ success: false, error: '生成PRD Prompt失败' });
+  }
+});
+
+// 生成财报分析 prompt
+router.post('/generate-finance', (req: Request, res: Response) => {
+  try {
+    const request: GenerateFinancePromptRequest = req.body;
+    const hasPath = typeof request.documentPath === 'string' && request.documentPath.trim().length > 0;
+    const hasText = typeof request.documentText === 'string' && request.documentText.trim().length > 0;
+
+    if (!hasPath && !hasText) {
+      return res.status(400).json({ success: false, error: '缺少财报输入：文档路径或文本至少提供一项' });
+    }
+
+    const result = generateFinancePrompt(request);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Failed to generate finance prompt:', error);
+    res.status(500).json({ success: false, error: '生成财报分析Prompt失败' });
+  }
+});
+
+// 生成研报分析 prompt
+router.post('/generate-research', (req: Request, res: Response) => {
+  try {
+    const request: GenerateResearchPromptRequest = req.body;
+    const hasPath = typeof request.documentPath === 'string' && request.documentPath.trim().length > 0;
+    const hasText = typeof request.documentText === 'string' && request.documentText.trim().length > 0;
+
+    if (!hasPath && !hasText) {
+      return res.status(400).json({ success: false, error: '缺少研报输入：文档路径或文本至少提供一项' });
+    }
+
+    const result = generateResearchPrompt(request);
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error('Failed to generate research prompt:', error);
+    res.status(500).json({ success: false, error: '生成研报分析Prompt失败' });
   }
 });
 

@@ -4,11 +4,13 @@ import { Layout, Menu } from 'antd';
 
 const { Header } = Layout;
 
-export type MainNavKey = 'diagnose' | 'records' | 'docgen' | 'prdgen' | 'prd-review';
+export type MainNavKey = 'diagnose' | 'records' | 'docgen' | 'prdgen' | 'prd-review' | 'finance' | 'research';
 
 const NAV_ITEMS = [
   { key: 'diagnose', label: '帮助文档诊断' },
   { key: 'docgen', label: '帮助文档生成' },
+  { key: 'finance', label: '财报分析' },
+  { key: 'research', label: '研报分析' },
   { key: 'prdgen', label: 'PRD生成' },
   { key: 'prd-review', label: 'PRD评审' },
   { key: 'records', label: '最近记录' },
@@ -26,6 +28,10 @@ const MainNavHeader: React.FC<MainNavHeaderProps> = ({ selectedKey }) => {
       navigate('/', { replace: true });
     } else if (key === 'docgen') {
       navigate('/docgen', { replace: true });
+    } else if (key === 'finance') {
+      navigate('/finance', { replace: true });
+    } else if (key === 'research') {
+      navigate('/research', { replace: true });
     } else if (key === 'prdgen') {
       navigate({ pathname: '/', search: '?nav=prdgen' }, { replace: true });
     } else if (key === 'prd-review') {

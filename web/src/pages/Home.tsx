@@ -11,9 +11,15 @@ import HistoryList from '../components/HistoryList';
 import PromptPanel from '../components/PromptPanel';
 import DocGeneratorPanel from '../components/DocGeneratorPanel';
 import PrdGeneratorPanel from '../components/PrdGeneratorPanel';
+import FinanceAnalysisPanel from '../components/FinanceAnalysisPanel';
+import ResearchAnalysisPanel from '../components/ResearchAnalysisPanel';
+import FinanceDocTree from '../components/FinanceDocTree';
+import ResearchDocTree from '../components/ResearchDocTree';
+import FinanceHistoryList from '../components/FinanceHistoryList';
+import ResearchHistoryList from '../components/ResearchHistoryList';
 import PrdTree from '../components/PrdTree';
 import MainNavHeader, { MainNavKey } from '../components/MainNavHeader';
-import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree, saveFixedDoc, getRecentRecords } from '../services/api';
+import { getDocumentContent, getReport, getTimeline, getFixedDoc, getDocTree, saveFixedDoc, getRecentRecords, getFinanceDocumentContent, getFinanceDocumentFileUrl, getFinanceReport, getFinanceTimeline, getResearchDocumentContent, getResearchDocumentFileUrl, getResearchReport, getResearchTimeline } from '../services/api';
 import { DocNode, DiagnoseRecord, TimelineData, RecentRecordItem, PrdDocNode } from '../types';
 
 const { Sider, Content } = Layout;
@@ -24,9 +30,15 @@ const Home: React.FC = () => {
   const [searchParams] = useSearchParams();
 
   const [selectedDoc, setSelectedDoc] = useState<DocNode | null>(null);
+  const [selectedFinanceDoc, setSelectedFinanceDoc] = useState<DocNode | null>(null);
+  const [selectedResearchDoc, setSelectedResearchDoc] = useState<DocNode | null>(null);
   const [selectedPrdDoc, setSelectedPrdDoc] = useState<PrdDocNode | null>(null);
   const [selectedRecord, setSelectedRecord] = useState<DiagnoseRecord | null>(null);
+  const [selectedFinanceRecord, setSelectedFinanceRecord] = useState<DiagnoseRecord | null>(null);
+  const [selectedResearchRecord, setSelectedResearchRecord] = useState<DiagnoseRecord | null>(null);
   const [activeTab, setActiveTab] = useState('preview');
+  const [financeActiveTab, setFinanceActiveTab] = useState('finance-preview');
+  const [researchActiveTab, setResearchActiveTab] = useState('research-preview');
   const [docTree, setDocTree] = useState<DocNode[]>([]);
   const [recentRecords, setRecentRecords] = useState<RecentRecordItem[]>([]);
   const [loadingRecentRecords, setLoadingRecentRecords] = useState(false);
@@ -36,12 +48,22 @@ const Home: React.FC = () => {
   // 文档内容
   const [docContent, setDocContent] = useState('');
   const [loadingContent, setLoadingContent] = useState(false);
+  const [financeDocContent, setFinanceDocContent] = useState('');
+  const [loadingFinanceContent, setLoadingFinanceContent] = useState(false);
+  const [researchDocContent, setResearchDocContent] = useState('');
+  const [loadingResearchContent, setLoadingResearchContent] = useState(false);
 
   // 诊断记录相关数据
   const [reportContent, setReportContent] = useState('');
   const [timelineData, setTimelineData] = useState<TimelineData | null>(null);
   const [fixedContent, setFixedContent] = useState('');
   const [loadingDiagnose, setLoadingDiagnose] = useState(false);
+  const [financeReportContent, setFinanceReportContent] = useState('');
+  const [financeTimelineData, setFinanceTimelineData] = useState<TimelineData | null>(null);
+  const [loadingFinanceDiagnose, setLoadingFinanceDiagnose] = useState(false);
+  const [researchReportContent, setResearchReportContent] = useState('');
+  const [researchTimelineData, setResearchTimelineData] = useState<TimelineData | null>(null);
+  const [loadingResearchDiagnose, setLoadingResearchDiagnose] = useState(false);
   const [diffFullscreen, setDiffFullscreen] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState('');
@@ -52,12 +74,16 @@ const Home: React.FC = () => {
   const recordPath = searchParams.get('record') || undefined;
   const navQuery = searchParams.get('nav');
 
-  // 主导航：Home 仅挂载在 /、/diagnose、/records、/docgen；PRD 生成通过 ?nav=prdgen（与 PrdGenPage 重定向一致）
-  const currentNav: 'diagnose' | 'records' | 'docgen' | 'prdgen' =
+  // 主导航：Home 仅挂载在 /、/diagnose、/records、/docgen、/finance；PRD 生成通过 ?nav=prdgen（与 PrdGenPage 重定向一致）
+  const currentNav: 'diagnose' | 'records' | 'docgen' | 'prdgen' | 'finance' | 'research' =
     location.pathname === '/records'
       ? 'records'
       : location.pathname === '/docgen'
         ? 'docgen'
+        : location.pathname === '/finance'
+          ? 'finance'
+          : location.pathname === '/research'
+            ? 'research'
         : (location.pathname === '/' || location.pathname === '/diagnose') && navQuery === 'prdgen'
           ? 'prdgen'
           : 'diagnose';
@@ -133,6 +159,24 @@ const Home: React.FC = () => {
   }, [selectedDoc]);
 
   useEffect(() => {
+    if (selectedFinanceDoc) {
+      loadFinanceDocContent();
+      setSelectedFinanceRecord(null);
+      setFinanceReportContent('');
+      setFinanceTimelineData(null);
+    }
+  }, [selectedFinanceDoc]);
+
+  useEffect(() => {
+    if (selectedResearchDoc) {
+      loadResearchDocContent();
+      setSelectedResearchRecord(null);
+      setResearchReportContent('');
+      setResearchTimelineData(null);
+    }
+  }, [selectedResearchDoc]);
+
+  useEffect(() => {
     if (selectedRecord) {
       loadDiagnoseDetails();
     } else {
@@ -141,6 +185,24 @@ const Home: React.FC = () => {
       setFixedContent('');
     }
   }, [selectedRecord]);
+
+  useEffect(() => {
+    if (selectedFinanceRecord) {
+      loadFinanceDiagnoseDetails();
+    } else {
+      setFinanceReportContent('');
+      setFinanceTimelineData(null);
+    }
+  }, [selectedFinanceRecord]);
+
+  useEffect(() => {
+    if (selectedResearchRecord) {
+      loadResearchDiagnoseDetails();
+    } else {
+      setResearchReportContent('');
+      setResearchTimelineData(null);
+    }
+  }, [selectedResearchRecord]);
 
   useEffect(() => {
     if (currentNav === 'records') {
@@ -204,6 +266,82 @@ const Home: React.FC = () => {
     }
   };
 
+  const loadFinanceDocContent = async () => {
+    if (!selectedFinanceDoc) return;
+    const isPdf = selectedFinanceDoc.relativePath.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      setFinanceDocContent('');
+      setLoadingFinanceContent(false);
+      return;
+    }
+    setLoadingFinanceContent(true);
+    try {
+      const content = await getFinanceDocumentContent(selectedFinanceDoc.relativePath);
+      setFinanceDocContent(content);
+    } catch (e) {
+      console.error('Failed to load finance doc:', e);
+      setFinanceDocContent('');
+    } finally {
+      setLoadingFinanceContent(false);
+    }
+  };
+
+  const loadResearchDocContent = async () => {
+    if (!selectedResearchDoc) return;
+    const isPdf = selectedResearchDoc.relativePath.toLowerCase().endsWith('.pdf');
+    if (isPdf) {
+      setResearchDocContent('');
+      setLoadingResearchContent(false);
+      return;
+    }
+    setLoadingResearchContent(true);
+    try {
+      const content = await getResearchDocumentContent(selectedResearchDoc.relativePath);
+      setResearchDocContent(content);
+    } catch (e) {
+      console.error('Failed to load research doc:', e);
+      setResearchDocContent('');
+    } finally {
+      setLoadingResearchContent(false);
+    }
+  };
+
+  const loadFinanceDiagnoseDetails = async () => {
+    if (!selectedFinanceRecord) return;
+    setLoadingFinanceDiagnose(true);
+    try {
+      const [report, timeline] = await Promise.all([
+        getFinanceReport(selectedFinanceRecord.reportPath).catch(() => '报告文件不存在'),
+        getFinanceTimeline(selectedFinanceRecord.timelinePath).catch(() => null),
+      ]);
+      setFinanceReportContent(report);
+      setFinanceTimelineData(timeline);
+    } catch (error) {
+      console.error('Failed to load finance details:', error);
+    } finally {
+      setLoadingFinanceDiagnose(false);
+    }
+  };
+
+  const loadResearchDiagnoseDetails = async () => {
+    if (!selectedResearchRecord) return;
+    setLoadingResearchDiagnose(true);
+    try {
+      const [report, timeline] = await Promise.all([
+        getResearchReport(selectedResearchRecord.reportPath).catch(() => '报告文件不存在'),
+        selectedResearchRecord.timelinePath
+          ? getResearchTimeline(selectedResearchRecord.timelinePath).catch(() => null)
+          : Promise.resolve(null),
+      ]);
+      setResearchReportContent(report);
+      setResearchTimelineData(timeline);
+    } catch (error) {
+      console.error('Failed to load research details:', error);
+    } finally {
+      setLoadingResearchDiagnose(false);
+    }
+  };
+
   const handleSelectDoc = (node: DocNode) => {
     setSelectedDoc(node);
     setSelectedRecord(null);
@@ -220,6 +358,26 @@ const Home: React.FC = () => {
 
   const handleSelectPrdDocForPrdGen = (node: PrdDocNode) => {
     setSelectedPrdDoc(node);
+  };
+
+  const handleSelectFinanceDoc = (node: DocNode) => {
+    setSelectedFinanceDoc(node);
+    setFinanceActiveTab('finance-preview');
+  };
+
+  const handleSelectResearchDoc = (node: DocNode) => {
+    setSelectedResearchDoc(node);
+    setResearchActiveTab('research-preview');
+  };
+
+  const handleSelectResearchRecord = (record: DiagnoseRecord) => {
+    setSelectedResearchRecord(record);
+    setResearchActiveTab('research-history');
+  };
+
+  const handleSelectFinanceRecord = (record: DiagnoseRecord) => {
+    setSelectedFinanceRecord(record);
+    setFinanceActiveTab('finance-history');
   };
 
   const handleSelectRecord = (record: DiagnoseRecord) => {
@@ -292,8 +450,8 @@ const Home: React.FC = () => {
     ),
   };
 
-  const renderSummary = () => {
-    if (!timelineData) return <Empty description="无诊断详情数据" />;
+  const renderSummary = (timeline: TimelineData | null = timelineData) => {
+    if (!timeline) return <Empty description="无诊断详情数据" />;
 
     return (
       <div>
@@ -301,28 +459,28 @@ const Home: React.FC = () => {
           <Space direction="vertical" style={{ width: '100%' }}>
             <div>
               <strong>任务状态:</strong>{' '}
-              <Tag color={timelineData.status === 'completed' ? 'success' : 'error'}>
-                {timelineData.status === 'completed' ? '已完成' : timelineData.status}
+              <Tag color={timeline.status === 'completed' ? 'success' : 'error'}>
+                {timeline.status === 'completed' ? '已完成' : timeline.status}
               </Tag>
             </div>
             <div>
-              <strong>总问题数:</strong> {timelineData.summary.total_issues}
+              <strong>总问题数:</strong> {timeline.summary.total_issues}
             </div>
             <div>
-              <strong>高优先级:</strong> <Tag color="red">{timelineData.summary.by_severity.high}</Tag>
+              <strong>高优先级:</strong> <Tag color="red">{timeline.summary.by_severity.high}</Tag>
               <strong style={{ marginLeft: 16 }}>中优先级:</strong>{' '}
-              <Tag color="orange">{timelineData.summary.by_severity.medium}</Tag>
+              <Tag color="orange">{timeline.summary.by_severity.medium}</Tag>
               <strong style={{ marginLeft: 16 }}>低优先级:</strong>{' '}
-              <Tag color="blue">{timelineData.summary.by_severity.low}</Tag>
+              <Tag color="blue">{timeline.summary.by_severity.low}</Tag>
             </div>
             <div>
-              <strong>耗时:</strong> {timelineData.duration_seconds}秒
+              <strong>耗时:</strong> {timeline.duration_seconds}秒
             </div>
           </Space>
         </Card>
 
         <Card title="各维度诊断详情" size="small">
-          {timelineData.dimensions.map((dim) => {
+          {timeline.dimensions.map((dim) => {
             // 锚点ID映射：与诊断报告中的锚点格式对应
             const anchorMap: Record<number, string> = {
               1: '2-1-文档与系统一致性',
@@ -718,6 +876,11 @@ const Home: React.FC = () => {
       return;
     }
 
+    if (record.source === 'finance') {
+      navigate('/finance');
+      return;
+    }
+
     navigate('/?nav=prdgen');
   };
 
@@ -731,6 +894,8 @@ const Home: React.FC = () => {
         return <RocketOutlined style={{ color: '#722ed1' }} />;
       case 'prdreview':
         return <AppstoreOutlined style={{ color: '#fa8c16' }} />;
+      case 'finance':
+        return <FileTextOutlined style={{ color: '#13c2c2' }} />;
       default:
         return <HistoryOutlined style={{ color: '#8c8c8c' }} />;
     }
@@ -880,6 +1045,250 @@ const Home: React.FC = () => {
             </Content>
           </>
         )}
+        {currentNav === 'finance' && (
+          <>
+            <Sider width={280} style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}>
+              <div style={{ padding: 16, height: 'calc(100vh - 64px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ marginBottom: 16 }}>财报目录</h3>
+                <FinanceDocTree
+                  onSelectDoc={handleSelectFinanceDoc}
+                  selectedDocPath={selectedFinanceDoc?.relativePath}
+                  defaultSelectFirst={true}
+                />
+              </div>
+            </Sider>
+            <Content style={{ background: '#fff', padding: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {selectedFinanceDoc && (
+                <Card
+                  size="small"
+                  title={(
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <FileTextOutlined />
+                      <span style={{ fontWeight: 500 }}>{selectedFinanceDoc.name}</span>
+                    </div>
+                  )}
+                  style={{ marginBottom: 16 }}
+                >
+                  <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                    finance_reports/{selectedFinanceDoc.relativePath}
+                  </div>
+                </Card>
+              )}
+              <Tabs
+                activeKey={financeActiveTab}
+                onChange={setFinanceActiveTab}
+                style={{ flex: 1 }}
+                items={[
+                  {
+                    key: 'finance-preview',
+                    label: <span><FileSearchOutlined /> 文档预览</span>,
+                    children: loadingFinanceContent ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
+                    ) : selectedFinanceDoc?.relativePath?.toLowerCase().endsWith('.pdf') ? (
+                      <div style={{ height: 'calc(100vh - 260px)', background: '#fff', borderRadius: 6, overflow: 'hidden' }}>
+                        <iframe
+                          title={selectedFinanceDoc.name}
+                          src={getFinanceDocumentFileUrl(selectedFinanceDoc.relativePath)}
+                          style={{ width: '100%', height: '100%', border: 'none' }}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: 'calc(100vh - 260px)', overflow: 'auto' }}>
+                        <Button
+                          type="link"
+                          icon={<CopyOutlined />}
+                          onClick={() => handleCopy(financeDocContent)}
+                          style={{ float: 'right' }}
+                          size="small"
+                        >
+                          复制
+                        </Button>
+                        <div style={{ background: '#fff', padding: 16, borderRadius: 6, lineHeight: 1.6, marginTop: 8 }}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                            {financeDocContent}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'finance-history',
+                    label: <span><HistoryOutlined /> 分析历史</span>,
+                    children: (
+                      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <FinanceHistoryList
+                          documentPath={selectedFinanceDoc?.relativePath || ''}
+                          onSelectRecord={handleSelectFinanceRecord}
+                          selectedRecord={selectedFinanceRecord}
+                        />
+                        {selectedFinanceRecord && (
+                          <div style={{ flex: 1, marginTop: 16, overflow: 'auto' }}>
+                            <Tabs
+                              defaultActiveKey="finance-report"
+                              items={[
+                                {
+                                  key: 'finance-report',
+                                  label: <span><FileTextOutlined /> 分析报告</span>,
+                                  children: loadingFinanceDiagnose ? (
+                                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
+                                  ) : (
+                                    <div style={{ maxHeight: 'calc(100vh - 460px)', overflow: 'auto' }}>
+                                      <Button type="link" icon={<CopyOutlined />} onClick={() => handleCopy(financeReportContent)} style={{ float: 'right' }} size="small">复制</Button>
+                                      <div style={{ background: '#fff', padding: 16, borderRadius: 6, lineHeight: 1.6, marginTop: 8 }}>
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                                          {financeReportContent}
+                                        </ReactMarkdown>
+                                      </div>
+                                    </div>
+                                  ),
+                                },
+                                {
+                                  key: 'finance-timeline',
+                                  label: <span><DashboardOutlined /> 分析详情</span>,
+                                  children: loadingFinanceDiagnose ? (
+                                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
+                                  ) : (
+                                    <div style={{ maxHeight: 'calc(100vh - 460px)', overflow: 'auto' }}>
+                                      {financeTimelineData ? renderSummary(financeTimelineData) : <Empty description="无分析详情数据" />}
+                                    </div>
+                                  ),
+                                },
+                              ]}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'finance-prompt',
+                    label: <span><FileAddOutlined /> 生成财报分析Prompt</span>,
+                    children: <FinanceAnalysisPanel selectedDocumentPath={selectedFinanceDoc?.relativePath} />,
+                  },
+                ]}
+              />
+            </Content>
+          </>
+        )}
+        {currentNav === 'research' && (
+          <>
+            <Sider width={280} style={{ background: '#fff', borderRight: '1px solid #f0f0f0' }}>
+              <div style={{ padding: 16, height: 'calc(100vh - 64px)', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                <h3 style={{ marginBottom: 16 }}>研报目录</h3>
+                <ResearchDocTree
+                  onSelectDoc={handleSelectResearchDoc}
+                  selectedDocPath={selectedResearchDoc?.relativePath}
+                  defaultSelectFirst={true}
+                />
+              </div>
+            </Sider>
+            <Content style={{ background: '#fff', padding: 16, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {selectedResearchDoc && (
+                <Card
+                  size="small"
+                  title={(
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <FileTextOutlined />
+                      <span style={{ fontWeight: 500 }}>{selectedResearchDoc.name}</span>
+                    </div>
+                  )}
+                  style={{ marginBottom: 16 }}
+                >
+                  <div style={{ color: '#8c8c8c', fontSize: 12 }}>
+                    research_reports/{selectedResearchDoc.relativePath}
+                  </div>
+                </Card>
+              )}
+              <Tabs
+                activeKey={researchActiveTab}
+                onChange={setResearchActiveTab}
+                style={{ flex: 1 }}
+                items={[
+                  {
+                    key: 'research-preview',
+                    label: <span><FileSearchOutlined /> 文档预览</span>,
+                    children: loadingResearchContent ? (
+                      <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
+                    ) : selectedResearchDoc?.relativePath?.toLowerCase().endsWith('.pdf') ? (
+                      <div style={{ height: 'calc(100vh - 260px)', background: '#fff', borderRadius: 6, overflow: 'hidden' }}>
+                        <iframe
+                          title={selectedResearchDoc.name}
+                          src={getResearchDocumentFileUrl(selectedResearchDoc.relativePath)}
+                          style={{ width: '100%', height: '100%', border: 'none' }}
+                        />
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: 'calc(100vh - 260px)', overflow: 'auto' }}>
+                        <Button type="link" icon={<CopyOutlined />} onClick={() => handleCopy(researchDocContent)} style={{ float: 'right' }} size="small">
+                          复制
+                        </Button>
+                        <div style={{ background: '#fff', padding: 16, borderRadius: 6, lineHeight: 1.6, marginTop: 8 }}>
+                          <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                            {researchDocContent}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'research-history',
+                    label: <span><HistoryOutlined /> 分析历史</span>,
+                    children: (
+                      <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                        <ResearchHistoryList
+                          documentPath={selectedResearchDoc?.relativePath || ''}
+                          onSelectRecord={handleSelectResearchRecord}
+                          selectedRecord={selectedResearchRecord}
+                        />
+                        {selectedResearchRecord && (
+                          <div style={{ flex: 1, marginTop: 16, overflow: 'auto' }}>
+                            <Tabs
+                              defaultActiveKey="research-report"
+                              items={[
+                                {
+                                  key: 'research-report',
+                                  label: <span><FileTextOutlined /> 分析报告</span>,
+                                  children: loadingResearchDiagnose ? (
+                                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
+                                  ) : (
+                                    <div style={{ maxHeight: 'calc(100vh - 460px)', overflow: 'auto' }}>
+                                      <Button type="link" icon={<CopyOutlined />} onClick={() => handleCopy(researchReportContent)} style={{ float: 'right' }} size="small">复制</Button>
+                                      <div style={{ background: '#fff', padding: 16, borderRadius: 6, lineHeight: 1.6, marginTop: 8 }}>
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
+                                          {researchReportContent}
+                                        </ReactMarkdown>
+                                      </div>
+                                    </div>
+                                  ),
+                                },
+                                {
+                                  key: 'research-timeline',
+                                  label: <span><DashboardOutlined /> 分析详情</span>,
+                                  children: loadingResearchDiagnose ? (
+                                    <div style={{ display: 'flex', justifyContent: 'center', padding: 40 }}><Spin size="large" /></div>
+                                  ) : (
+                                    <div style={{ maxHeight: 'calc(100vh - 460px)', overflow: 'auto' }}>
+                                      {researchTimelineData ? renderSummary(researchTimelineData) : <Empty description="无分析详情数据" />}
+                                    </div>
+                                  ),
+                                },
+                              ]}
+                            />
+                          </div>
+                        )}
+                      </div>
+                    ),
+                  },
+                  {
+                    key: 'research-prompt',
+                    label: <span><FileAddOutlined /> 生成研报分析Prompt</span>,
+                    children: <ResearchAnalysisPanel selectedDocumentPath={selectedResearchDoc?.relativePath} />,
+                  },
+                ]}
+              />
+            </Content>
+          </>
+        )}
         {currentNav === 'records' && (
           <Content style={{ background: '#fff', padding: 24, overflow: 'auto' }}>
             <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -894,6 +1303,7 @@ const Home: React.FC = () => {
                     { value: 'all', label: '全部来源' },
                     { value: 'diagnose', label: '帮助文档诊断' },
                     { value: 'docgen', label: '帮助文档生成' },
+                    { value: 'finance', label: '财报分析' },
                     { value: 'prdgen', label: 'PRD生成' },
                     { value: 'prdreview', label: 'PRD评审' },
                   ]}

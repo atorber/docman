@@ -21,6 +21,8 @@ const App: React.FC = () => {
           <Route path="/diagnose" element={<Home />} />
           <Route path="/records" element={<Home />} />
           <Route path="/docgen" element={<Home />} />
+          <Route path="/finance" element={<Home />} />
+          <Route path="/research" element={<Home />} />
           <Route path="/prd-review" element={<PrdReview />} />
           <Route path="/prd-generate" element={<PrdGenPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />

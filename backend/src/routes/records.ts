@@ -56,8 +56,10 @@ const inferSource = (data: TimelineLike): RecentRecordItem['source'] => {
   if (normalizedType === 'docgen' || normalizedSource.includes('帮助文档生成')) return 'docgen';
   if (normalizedType === 'prdgen' || normalizedSource.includes('prd生成')) return 'prdgen';
   if (normalizedType === 'prdreview' || normalizedSource.includes('prd评审')) return 'prdreview';
+  if (normalizedType === 'finance' || normalizedSource.includes('财报分析')) return 'finance';
   if (normalizedType === 'diagnose' || normalizedSource.includes('帮助文档诊断')) return 'diagnose';
 
+  if (data.document?.path?.includes('finance_reports/')) return 'finance';
   if (Array.isArray(data.perspectives)) return 'prdreview';
   if (data.prd && data.requirement) return 'prdgen';
   if (data.prd || data.prd_source || data.output_path) return 'docgen';
@@ -69,10 +71,13 @@ const sourceLabelMap: Record<RecentRecordItem['source'], RecentRecordItem['sourc
   docgen: '帮助文档生成',
   prdgen: 'PRD生成',
   prdreview: 'PRD评审',
+  finance: '财报分析',
 };
 
 const buildRecentRecord = (timelinePath: string, data: TimelineLike): RecentRecordItem => {
-  const source = inferSource(data);
+  const source = timelinePath.includes(`${path.sep}timeline${path.sep}finance${path.sep}`)
+    ? 'finance'
+    : inferSource(data);
   const sourceLabel = sourceLabelMap[source];
 
   if (source === 'prdreview') {

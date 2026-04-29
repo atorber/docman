@@ -107,6 +107,21 @@ export interface GeneratePromptResponse {
   timestamp: string;
 }
 
+export interface GenerateFinancePromptRequest {
+  documentPath?: string;
+  documentText?: string;
+  focusPreference?: string;
+  externalDataPriority?: string;
+}
+
+export interface GenerateResearchPromptRequest {
+  documentPath?: string;
+  documentText?: string;
+  reportType?: '个股研究' | '行业板块研究';
+  analysisPreference?: string;
+  externalDataPriority?: string;
+}
+
 // API响应
 export interface ApiResponse<T> {
   success: boolean;
@@ -308,8 +323,8 @@ export interface RequirementTypeOption {
 // 最近记录（统一聚合）
 export interface RecentRecordItem {
   id: string;
-  source: 'diagnose' | 'docgen' | 'prdgen' | 'prdreview';
-  sourceLabel: '帮助文档诊断' | '帮助文档生成' | 'PRD生成' | 'PRD评审';
+  source: 'diagnose' | 'docgen' | 'prdgen' | 'prdreview' | 'finance';
+  sourceLabel: '帮助文档诊断' | '帮助文档生成' | 'PRD生成' | 'PRD评审' | '财报分析';
   name: string;
   path: string;
   timestamp: string;
